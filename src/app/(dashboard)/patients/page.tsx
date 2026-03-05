@@ -6,8 +6,8 @@ import type { Metadata } from 'next'
 export const metadata: Metadata = { title: 'Patients' }
 export const dynamic = 'force-dynamic'
 
-export default async function PatientsPage({ searchParams }: { searchParams: { q?: string } }) {
-  const patients = await getPatients(searchParams.q)
-
-  return <PatientsClient patients={patients as any} searchQuery={searchParams.q || ''} />
+export default async function PatientsPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
+  const { q } = await searchParams
+  const patients = await getPatients(q)
+  return <PatientsClient patients={patients as any} searchQuery={q || ''} />
 }

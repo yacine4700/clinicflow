@@ -9,10 +9,11 @@ import type { Metadata } from 'next'
 
 export const metadata: Metadata = { title: 'New Prescription' }
 
-export default async function NewPrescriptionPage({ searchParams }: { searchParams: { patientId?: string } }) {
+export default async function NewPrescriptionPage({ searchParams }: { searchParams: Promise<{ patientId?: string }> }) {
   const session = await auth()
   if (session?.user?.role !== 'DOCTOR') redirect('/dashboard')
 
+  const { patientId } = await searchParams
   const [patients, templates, settings] = await Promise.all([
     getPatients(),
     getTemplates(),
@@ -25,7 +26,7 @@ export default async function NewPrescriptionPage({ searchParams }: { searchPara
       templates={templates as any}
       doctorName={session.user.name}
       settings={settings as any}
-      defaultPatientId={searchParams.patientId}
+      defaultPatientId={patientId}
     />
   )
 }

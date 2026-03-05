@@ -8,9 +8,10 @@ import type { Metadata } from 'next'
 
 export const metadata: Metadata = { title: 'Prescription' }
 
-export default async function PrescriptionPage({ params }: { params: { id: string } }) {
-  const [prescription, settings, session] = await Promise.all([
-    getPrescription(params.id),
+export default async function PrescriptionPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
+  const [prescription, settings] = await Promise.all([
+    getPrescription(id),
     getClinicSettings(),
     auth(),
   ])
