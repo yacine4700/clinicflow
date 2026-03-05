@@ -1,0 +1,2 @@
+/* Add to src/app/globals.css — input field utility */
+/* This is appended via a separate style block for shadcn-like input fields */

@@ -1,0 +1,261 @@
+// prisma/schema.prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Auth & Users ──────────────────────────────────────────────────────────────
+
+enum Role {
+  DOCTOR
+  SECRETARY
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String
+  email         String    @unique
+  password      String
+  role          Role      @default(SECRETARY)
+  avatar        String?
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  prescriptions Prescription[]
+  documents     Document[]
+  payments      Payment[]      @relation("RecordedBy")
+
+  @@map("users")
+}
+
+// ─── Patients ─────────────────────────────────────────────────────────────────
+
+model Patient {
+  id              String    @id @default(cuid())
+  firstName       String
+  lastName        String
+  dateOfBirth     DateTime?
+  gender          String?   // MALE | FEMALE | OTHER
+  phone           String?
+  email           String?
+  address         String?
+  nationalId      String?   @unique
+  bloodType       String?
+  allergies       String[]  @default([])
+  hasFile         Boolean   @default(false)
+  notes           String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  // Medical file (optional)
+  medicalFile     MedicalFile?
+
+  // Relations
+  waitingEntries  WaitingRoom[]
+  prescriptions   Prescription[]
+  payments        Payment[]
+  documents       Document[]
+
+  @@map("patients")
+}
+
+model MedicalFile {
+  id              String    @id @default(cuid())
+  patientId       String    @unique
+  chiefComplaint  String?
+  medicalHistory  String?
+  familyHistory   String?
+  currentMeds     String?
+  vaccinations    String?
+  lastVisit       DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  patient         Patient   @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@map("medical_files")
+}
+
+// ─── Waiting Room ─────────────────────────────────────────────────────────────
+
+enum WaitingStatus {
+  WAITING
+  IN_CONSULTATION
+  DONE
+  LEFT
+}
+
+model WaitingRoom {
+  id              String        @id @default(cuid())
+  patientId       String
+  registeredAt    DateTime      @default(now())
+  calledAt        DateTime?
+  doneAt          DateTime?
+  status          WaitingStatus @default(WAITING)
+  priority        Int           @default(0) // 0=normal, 1=urgent
+  notes           String?
+  date            DateTime      @default(now()) @db.Date
+
+  patient         Patient       @relation(fields: [patientId], references: [id])
+
+  @@map("waiting_room")
+}
+
+// ─── Prescriptions ────────────────────────────────────────────────────────────
+
+model Prescription {
+  id              String    @id @default(cuid())
+  patientId       String
+  doctorId        String
+  date            DateTime  @default(now())
+  diagnosis       String?
+  notes           String?
+  isTemplate      Boolean   @default(false)
+  templateName    String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  patient         Patient   @relation(fields: [patientId], references: [id])
+  doctor          User      @relation(fields: [doctorId], references: [id])
+  items           PrescriptionItem[]
+
+  @@map("prescriptions")
+}
+
+model PrescriptionItem {
+  id              String    @id @default(cuid())
+  prescriptionId  String
+  drugName        String
+  dosage          String
+  frequency       String
+  duration        String
+  instructions    String?
+  order           Int       @default(0)
+
+  prescription    Prescription @relation(fields: [prescriptionId], references: [id], onDelete: Cascade)
+
+  @@map("prescription_items")
+}
+
+model PrescriptionTemplate {
+  id              String    @id @default(cuid())
+  name            String
+  description     String?
+  items           Json      // Array of { drugName, dosage, frequency, duration, instructions }
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@map("prescription_templates")
+}
+
+// ─── Drug Database ────────────────────────────────────────────────────────────
+
+model Drug {
+  id              String    @id @default(cuid())
+  name            String
+  genericName     String?
+  category        String?
+  description     String?
+  dosageForms     String[]  @default([])
+  commonDosages   String[]  @default([])
+  contraindications String?
+  sideEffects     String?
+  isActive        Boolean   @default(true)
+
+  @@map("drugs")
+}
+
+// ─── Documents ────────────────────────────────────────────────────────────────
+
+enum DocumentType {
+  MEDICAL_LEAVE
+  MEDICAL_LETTER
+  CERTIFICATE
+  CUSTOM
+}
+
+model Document {
+  id              String        @id @default(cuid())
+  patientId       String
+  doctorId        String
+  type            DocumentType
+  title           String
+  content         Json          // Structured content per type
+  date            DateTime      @default(now())
+  createdAt       DateTime      @default(now())
+
+  patient         Patient       @relation(fields: [patientId], references: [id])
+  doctor          User          @relation(fields: [doctorId], references: [id])
+
+  @@map("documents")
+}
+
+// ─── Payments & Finance ───────────────────────────────────────────────────────
+
+enum PaymentMethod {
+  CASH
+  CARD
+  INSURANCE
+  OTHER
+}
+
+enum PaymentStatus {
+  PAID
+  PENDING
+  CANCELLED
+}
+
+model Payment {
+  id              String        @id @default(cuid())
+  patientId       String
+  recordedById    String
+  amount          Float
+  method          PaymentMethod @default(CASH)
+  status          PaymentStatus @default(PAID)
+  description     String?
+  date            DateTime      @default(now())
+  createdAt       DateTime      @default(now())
+
+  patient         Patient       @relation(fields: [patientId], references: [id])
+  recordedBy      User          @relation("RecordedBy", fields: [recordedById], references: [id])
+
+  @@map("payments")
+}
+
+model Expense {
+  id              String    @id @default(cuid())
+  category        String
+  description     String
+  amount          Float
+  date            DateTime  @default(now())
+  createdAt       DateTime  @default(now())
+
+  @@map("expenses")
+}
+
+// ─── Settings ─────────────────────────────────────────────────────────────────
+
+model ClinicSettings {
+  id                    String  @id @default("default")
+  clinicName            String  @default("My Clinic")
+  doctorName            String  @default("Dr.")
+  doctorSpecialty       String?
+  address               String?
+  phone                 String?
+  email                 String?
+  logo                  String?
+  consultationPrice     Float   @default(50)
+  requireMedicalFile    Boolean @default(false)
+  prescriptionFooter    String?
+  prescriptionHeader    String?
+  currency              String  @default("USD")
+  updatedAt             DateTime @updatedAt
+
+  @@map("clinic_settings")
+}

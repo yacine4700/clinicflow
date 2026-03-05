@@ -1,0 +1,110 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500&family=Playfair+Display:wght@600;700&display=swap');
+
+@layer base {
+  :root {
+    /* Clean medical-grade light theme */
+    --background: 210 40% 98%;
+    --foreground: 215 25% 12%;
+    --card: 0 0% 100%;
+    --card-foreground: 215 25% 12%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 215 25% 12%;
+    --primary: 199 89% 40%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 215 25% 20%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
+    --accent: 199 89% 95%;
+    --accent-foreground: 199 89% 30%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 199 89% 40%;
+    --radius: 0.625rem;
+  }
+
+  .dark {
+    --background: 215 30% 8%;
+    --foreground: 210 40% 96%;
+    --card: 215 28% 11%;
+    --card-foreground: 210 40% 96%;
+    --popover: 215 28% 11%;
+    --popover-foreground: 210 40% 96%;
+    --primary: 199 89% 50%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 215 28% 16%;
+    --secondary-foreground: 210 40% 85%;
+    --muted: 215 28% 16%;
+    --muted-foreground: 215 16% 57%;
+    --accent: 199 89% 18%;
+    --accent-foreground: 199 89% 80%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 215 28% 18%;
+    --input: 215 28% 18%;
+    --ring: 199 89% 50%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: 'DM Sans', sans-serif;
+  }
+  h1, h2, h3 {
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 600;
+  }
+  code, .font-mono {
+    font-family: 'DM Mono', monospace;
+  }
+}
+
+@layer utilities {
+  .clinic-card {
+    @apply bg-card border border-border rounded-xl shadow-sm;
+  }
+  .stat-card {
+    @apply bg-card border border-border rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow;
+  }
+  .page-header {
+    @apply mb-6 flex items-center justify-between;
+  }
+  .status-badge {
+    @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium;
+  }
+  /* Waiting room pulse for urgent */
+  .urgent-pulse {
+    animation: pulse-urgent 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+  @keyframes pulse-urgent {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+  }
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { @apply bg-muted rounded-full; }
+  ::-webkit-scrollbar-thumb { @apply bg-border rounded-full hover:bg-muted-foreground; }
+}
+
+/* Input field utility */
+.input-field {
+  @apply w-full px-3.5 py-2.5 rounded-xl border border-border bg-background text-foreground text-sm
+    placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30
+    focus:border-primary transition-all;
+}
+
+/* Print styles */
+@media print {
+  .no-print { display: none !important; }
+  body { background: white; }
+}
