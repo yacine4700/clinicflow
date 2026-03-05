@@ -5,7 +5,7 @@ import { useState, useEffect, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { callPatient, removeFromWaiting } from '@/lib/actions/waiting-room'
 import { addToWaitingRoom } from '@/lib/actions/patients'
-import { waitingDuration, formatDate, cn } from '@/lib/utils'
+import { waitingDuration, cn } from '@/lib/utils'
 import { Clock, UserPlus, Phone, AlertCircle, CheckCircle, X, RefreshCw, Activity } from 'lucide-react'
 import { toast } from 'sonner'
 import { AddToWaitingDialog } from './add-to-waiting-dialog'
@@ -46,7 +46,7 @@ export function WaitingRoomClient({
   // Auto-refresh data every 30s
   useEffect(() => {
     if (ticks > 0) router.refresh()
-  }, [ticks])
+  }, [ticks, router])
 
   const handleCall = (id: string, name: string) => {
     startTransition(async () => {

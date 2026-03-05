@@ -3,9 +3,8 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { prisma } from '@/lib/db/prisma'
-import { FileText, Plus, Printer, X, Loader2, Download } from 'lucide-react'
-import { formatDate, cn } from '@/lib/utils'
+import { FileText, Plus, Printer, X, Loader2 } from 'lucide-react'
+import { formatDate } from '@/lib/utils'
 import { toast } from 'sonner'
 
 const DOC_TYPES = [

@@ -1,8 +1,8 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500&family=Playfair+Display:wght@600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500&family=Playfair+Display:wght@600;700&display=swap');
 
 @layer base {
   :root {
@@ -57,7 +57,7 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground font-sans antialiased;
+    @apply bg-background text-foreground antialiased;
     font-family: 'DM Sans', sans-serif;
   }
   h1, h2, h3 {
@@ -76,13 +76,9 @@
   .stat-card {
     @apply bg-card border border-border rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow;
   }
-  .page-header {
-    @apply mb-6 flex items-center justify-between;
+  .animate-fade-in {
+    animation: fade-in 0.3s ease-out;
   }
-  .status-badge {
-    @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium;
-  }
-  /* Waiting room pulse for urgent */
   .urgent-pulse {
     animation: pulse-urgent 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   }
@@ -90,20 +86,17 @@
     0%, 100% { opacity: 1; }
     50% { opacity: 0.6; }
   }
-  /* Scrollbar */
   ::-webkit-scrollbar { width: 6px; height: 6px; }
   ::-webkit-scrollbar-track { @apply bg-muted rounded-full; }
   ::-webkit-scrollbar-thumb { @apply bg-border rounded-full hover:bg-muted-foreground; }
 }
 
-/* Input field utility */
 .input-field {
   @apply w-full px-3.5 py-2.5 rounded-xl border border-border bg-background text-foreground text-sm
     placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30
     focus:border-primary transition-all;
 }
 
-/* Print styles */
 @media print {
   .no-print { display: none !important; }
   body { background: white; }

@@ -4,7 +4,7 @@
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { updateClinicSettings } from '@/lib/actions/finance'
-import { Settings, Building, DollarSign, FileText, Loader2, Save, Trash2 } from 'lucide-react'
+import { Building, FileText, Loader2, Save } from 'lucide-react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 

@@ -4,7 +4,6 @@
 import { useState, useTransition } from 'react'
 import { recordPayment } from '@/lib/actions/finance'
 import { getPatients } from '@/lib/actions/patients'
-import { getClinicSettings } from '@/lib/actions/finance'
 import { X, DollarSign, Loader2, Search } from 'lucide-react'
 import { toast } from 'sonner'
 

@@ -1,7 +1,6 @@
 // src/app/(dashboard)/prescriptions/[id]/page.tsx
 import { getPrescription } from '@/lib/actions/prescriptions'
 import { getClinicSettings } from '@/lib/actions/finance'
-import { auth } from '@/lib/auth'
 import { notFound } from 'next/navigation'
 import { PrescriptionView } from '@/components/prescriptions/prescription-view'
 import type { Metadata } from 'next'
@@ -13,7 +12,6 @@ export default async function PrescriptionPage({ params }: { params: Promise<{ i
   const [prescription, settings] = await Promise.all([
     getPrescription(id),
     getClinicSettings(),
-    auth(),
   ])
 
   if (!prescription) notFound()

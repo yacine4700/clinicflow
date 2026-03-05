@@ -6,7 +6,7 @@ import { createPatient } from '@/lib/actions/patients'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { X, UserPlus, Loader2, ChevronDown, ChevronUp } from 'lucide-react'
+import { X, UserPlus, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 
 const schema = z.object({
@@ -42,7 +42,7 @@ export function AddPatientDialog({ onClose, onAdd }: { onClose: () => void; onAd
         toast.success(`${data.firstName} ${data.lastName} registered`)
         onAdd()
       }
-    } catch (e) {
+    } catch {
       toast.error('Failed to register patient')
     }
   }

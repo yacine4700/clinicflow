@@ -85,7 +85,7 @@ export function PrescriptionEditor({
           toast.success('Prescription created')
           router.push(`/prescriptions/${result.prescription.id}`)
         }
-      } catch (e) {
+      } catch {
         toast.error('Failed to create prescription')
       }
     })
