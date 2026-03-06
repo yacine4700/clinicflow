@@ -1,5 +1,3 @@
-// src/app/layout.tsx
-import React from 'react'
 import type { Metadata } from 'next'
 import './globals.css'
 import { Toaster } from 'sonner'
