@@ -190,7 +190,7 @@ export const en: Translations = {
     cash: 'Cash',
     card: 'Card',
     insurance: 'Insurance',
-    consultationFee: 'Consultation fee',
+    consultationFee: 'Consultation fee', revenue: 'Revenue', expenses: 'Expenses',
     selectCategory: 'Select...',
     expenseCategories: ['Supplies', 'Equipment', 'Utilities', 'Rent', 'Staff', 'Marketing', 'Other'],
   },

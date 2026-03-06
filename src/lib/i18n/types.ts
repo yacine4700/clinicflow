@@ -54,6 +54,7 @@ export interface Translations {
     thisMonth: string; revenueMinusExpenses: string; sixMonthOverview: string; recentPayments: string
     newExpense: string; category: string; description: string; amount: string; method: string
     cash: string; card: string; insurance: string; consultationFee: string; selectCategory: string
+    revenue: string; expenses: string
     expenseCategories: string[]
   }
   settings: {

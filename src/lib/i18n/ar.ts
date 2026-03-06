@@ -190,7 +190,7 @@ export const ar: Translations = {
     cash: 'نقداً',
     card: 'بطاقة',
     insurance: 'تأمين',
-    consultationFee: 'أتعاب الاستشارة',
+    consultationFee: 'أتعاب الاستشارة', revenue: 'الإيرادات', expenses: 'المصروفات',
     selectCategory: 'اختر...',
     expenseCategories: ['مستلزمات', 'معدات', 'مرافق', 'إيجار', 'موظفون', 'تسويق', 'أخرى'],
   },

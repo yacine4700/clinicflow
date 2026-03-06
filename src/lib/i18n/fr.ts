@@ -80,7 +80,7 @@ export const fr: Translations = {
     revenueMinusExpenses: 'Recettes - Dépenses', sixMonthOverview: 'Aperçu 6 mois',
     recentPayments: 'Paiements récents', newExpense: 'Nouvelle dépense', category: 'Catégorie',
     description: 'Description', amount: 'Montant', method: 'Mode de paiement', cash: 'Espèces',
-    card: 'Carte', insurance: 'Assurance', consultationFee: 'Honoraires', selectCategory: 'Sélectionner...',
+    card: 'Carte', insurance: 'Assurance', consultationFee: 'Honoraires', selectCategory: 'Sélectionner...', revenue: 'Recettes', expenses: 'Dépenses',
     expenseCategories: ['Fournitures', 'Équipement', 'Charges', 'Loyer', 'Personnel', 'Marketing', 'Autre'],
   },
   settings: {
