@@ -5,7 +5,7 @@ import React from 'react'
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { updateClinicSettings } from '@/lib/actions/finance'
-import { Building, FileText, Loader2, Save, Layout } from 'lucide-react'
+import { Building, FileText, Loader2, Save, Layout, Upload, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { PrescriptionDesigner } from './prescription-designer/PrescriptionDesigner'
@@ -17,6 +17,7 @@ interface ClinicSettings {
   consultationPrice: number; currency: string
   prescriptionHeader?: string; prescriptionFooter?: string
   requireMedicalFile: boolean
+  logo?: string
 }
 
 interface SettingsClientProps {
@@ -40,6 +41,7 @@ export function SettingsClient({ settings, templates }: SettingsClientProps) {
     prescriptionHeader: settings?.prescriptionHeader || '',
     prescriptionFooter: settings?.prescriptionFooter || '',
     requireMedicalFile: settings?.requireMedicalFile || false,
+    logo: settings?.logo || '',
   })
 
   const update = (key: keyof ClinicSettings, value: unknown) => setForm((f: ClinicSettings) => ({ ...f, [key]: value }))
@@ -94,6 +96,44 @@ export function SettingsClient({ settings, templates }: SettingsClientProps) {
             <Building className="w-4 h-4 text-primary" />
             Clinic Information
           </h2>
+
+          {/* Logo upload */}
+          <div className="flex items-center gap-5 p-4 bg-muted/30 rounded-xl border border-border">
+            <div className="w-20 h-20 rounded-xl border-2 border-dashed border-border flex items-center justify-center overflow-hidden shrink-0 bg-background">
+              {form.logo
+                ? <img src={form.logo} alt="Clinic logo" className="w-full h-full object-contain p-1" />
+                : <span className="text-3xl">🏥</span>
+              }
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-medium text-foreground mb-1">Clinic Logo</p>
+              <p className="text-xs text-muted-foreground mb-3">Used on prescriptions and documents. PNG or JPG, max 1MB.</p>
+              <div className="flex items-center gap-2">
+                <label className="cursor-pointer flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors">
+                  <Upload className="w-3.5 h-3.5" />
+                  {form.logo ? 'Change Logo' : 'Upload Logo'}
+                  <input
+                    type="file"
+                    accept="image/png,image/jpeg,image/jpg,image/webp"
+                    className="hidden"
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                      const file = e.target.files?.[0]
+                      if (!file) return
+                      if (file.size > 1024 * 1024) { toast.error('Image must be under 1MB'); return }
+                      const reader = new FileReader()
+                      reader.onload = () => update('logo', reader.result as string)
+                      reader.readAsDataURL(file)
+                    }}
+                  />
+                </label>
+                {form.logo && (
+                  <button onClick={() => update('logo', '')} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border border-border rounded-lg hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30 transition-colors text-muted-foreground">
+                    <X className="w-3.5 h-3.5" /> Remove
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="text-xs font-medium text-muted-foreground">Clinic Name</label>
