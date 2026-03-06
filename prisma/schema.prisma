@@ -255,6 +255,7 @@ model ClinicSettings {
   prescriptionFooter    String?
   prescriptionHeader    String?
   currency              String  @default("USD")
+  prescriptionLayout    Json?
   updatedAt             DateTime @updatedAt
 
   @@map("clinic_settings")
