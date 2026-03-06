@@ -255,6 +255,7 @@ model ClinicSettings {
   prescriptionFooter    String?
   prescriptionHeader    String?
   currency              String  @default("USD")
+  language              String  @default("fr")
   prescriptionLayout    Json?
   updatedAt             DateTime @updatedAt
 

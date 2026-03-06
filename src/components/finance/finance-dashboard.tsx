@@ -5,7 +5,8 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
 import { DollarSign, TrendingUp, TrendingDown, Activity, Plus, Loader2 } from 'lucide-react'
-import { formatCurrency, formatDate, cn } from '@/lib/utils'
+import { formatDate, cn } from '@/lib/utils'
+import { useApp, useT } from '@/components/providers/app-provider'
 import { addExpense } from '@/lib/actions/finance'
 import { toast } from 'sonner'
 import { RecordPaymentDialog } from './record-payment-dialog'
@@ -23,6 +24,8 @@ export function FinanceDashboard({
   recentPayments: any[]
 }) {
   const router = useRouter()
+  const { fmt } = useApp()
+  const t = useT()
   const [showExpenseForm, setShowExpenseForm] = useState(false)
   const [expenseForm, setExpenseForm] = useState({ category: '', description: '', amount: '' })
   const [saving, setSaving] = useState(false)
@@ -30,7 +33,7 @@ export function FinanceDashboard({
 
   const handleAddExpense = async () => {
     if (!expenseForm.category || !expenseForm.description || !expenseForm.amount) {
-      toast.error('Fill all expense fields'); return
+      toast.error(t.finance.category + ' / ' + t.finance.description + ' / ' + t.finance.amount); return
     }
     setSaving(true)
     try {
@@ -39,21 +42,21 @@ export function FinanceDashboard({
         description: expenseForm.description,
         amount: parseFloat(expenseForm.amount),
       })
-      toast.success('Expense recorded')
+      toast.success(t.finance.newExpense)
       setExpenseForm({ category: '', description: '', amount: '' })
       setShowExpenseForm(false)
       router.refresh()
     } catch {
-      toast.error('Failed to save expense')
+      toast.error('Erreur')
     }
     setSaving(false)
   }
 
   const statCards = [
-    { title: "Today's Revenue", value: formatCurrency(stats.todayRevenue), sub: `${stats.todayCount} consultations`, icon: DollarSign, color: 'emerald' as const },
-    { title: 'Monthly Revenue', value: formatCurrency(stats.monthRevenue), sub: 'This month', icon: TrendingUp, color: 'sky' as const },
-    { title: 'Monthly Expenses', value: formatCurrency(stats.monthExpenses), sub: 'This month', icon: TrendingDown, color: 'rose' as const },
-    { title: 'Net Income', value: formatCurrency(stats.netIncome), sub: 'Revenue - Expenses', icon: Activity, color: stats.netIncome >= 0 ? 'emerald' as const : 'rose' as const },
+    { title: t.finance.todayRevenue,    value: fmt(stats.todayRevenue),    sub: `${stats.todayCount} ${t.finance.consultationFee}`, icon: DollarSign, color: 'emerald' as const },
+    { title: t.finance.monthlyRevenue,  value: fmt(stats.monthRevenue),    sub: t.finance.thisMonth, icon: TrendingUp, color: 'sky' as const },
+    { title: t.finance.monthlyExpenses, value: fmt(stats.monthExpenses),   sub: t.finance.thisMonth, icon: TrendingDown, color: 'rose' as const },
+    { title: t.finance.netIncome,       value: fmt(stats.netIncome),       sub: t.finance.revenueMinusExpenses, icon: Activity, color: stats.netIncome >= 0 ? 'emerald' as const : 'rose' as const },
   ]
 
   const colorMap = {
@@ -62,12 +65,13 @@ export function FinanceDashboard({
     rose: 'bg-rose-50 text-rose-600 dark:bg-rose-950 dark:text-rose-400',
   }
 
+
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Finance</h1>
-          <p className="text-muted-foreground text-sm mt-0.5">Revenue, expenses, and financial overview</p>
+          <h1 className="text-2xl font-bold text-foreground">{t.finance.title}</h1>
+          <p className="text-muted-foreground text-sm mt-0.5">{t.finance.subtitle}</p>
         </div>
         <div className="flex gap-2">
           <button
@@ -75,14 +79,14 @@ export function FinanceDashboard({
             className="flex items-center gap-2 px-4 py-2.5 border border-border rounded-xl text-sm font-medium hover:bg-accent transition-colors"
           >
             <Plus className="w-4 h-4" />
-            Add Expense
+            {t.finance.addExpense}
           </button>
           <button
             onClick={() => setShowPayment(true)}
             className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-primary/90 transition-colors"
           >
             <DollarSign className="w-4 h-4" />
-            Record Payment
+            {t.finance.recordPayment}
           </button>
         </div>
       </div>
@@ -110,18 +114,18 @@ export function FinanceDashboard({
       {/* Expense Form */}
       {showExpenseForm && (
         <div className="clinic-card p-5">
-          <h3 className="font-semibold text-sm text-foreground mb-4">Record New Expense</h3>
+          <h3 className="font-semibold text-sm text-foreground mb-4">{t.finance.newExpense}</h3>
           <div className="grid grid-cols-3 gap-3">
             <div>
-              <label className="text-xs text-muted-foreground">Category</label>
+              <label className="text-xs text-muted-foreground">{t.finance.category}</label>
               <select
                 value={expenseForm.category}
                 onChange={e => setExpenseForm(f => ({ ...f, category: e.target.value }))}
                 className="input-field mt-1"
               >
-                <option value="">Select...</option>
-                {['Supplies', 'Equipment', 'Utilities', 'Rent', 'Staff', 'Marketing', 'Other'].map(c => (
-                  <option key={c} value={c}>{c}</option>
+                <option value="">{t.finance.selectCategory}</option>
+                {(t.finance.expenseCategories as string[]).map((c, i) => (
+                  <option key={i} value={c}>{c}</option>
                 ))}
               </select>
             </div>
@@ -131,11 +135,11 @@ export function FinanceDashboard({
                 value={expenseForm.description}
                 onChange={e => setExpenseForm(f => ({ ...f, description: e.target.value }))}
                 className="input-field mt-1"
-                placeholder="e.g., Medical gloves"
+                placeholder={t.finance.description}
               />
             </div>
             <div>
-              <label className="text-xs text-muted-foreground">Amount</label>
+              <label className="text-xs text-muted-foreground">{t.finance.amount}</label>
               <input
                 type="number"
                 value={expenseForm.amount}
@@ -146,14 +150,14 @@ export function FinanceDashboard({
             </div>
           </div>
           <div className="flex gap-2 mt-3">
-            <button onClick={() => setShowExpenseForm(false)} className="px-3 py-1.5 border border-border rounded-lg text-sm hover:bg-accent transition-colors">Cancel</button>
+            <button onClick={() => setShowExpenseForm(false)} className="px-3 py-1.5 border border-border rounded-lg text-sm hover:bg-accent transition-colors">{t.common.cancel}</button>
             <button
               onClick={handleAddExpense}
               disabled={saving}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 disabled:opacity-50 transition-colors"
             >
               {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
-              Save
+              {t.common.save}
             </button>
           </div>
         </div>
@@ -161,16 +165,16 @@ export function FinanceDashboard({
 
       {/* Chart */}
       <div className="clinic-card p-5">
-        <h3 className="font-semibold text-sm text-foreground mb-5">6-Month Overview</h3>
+        <h3 className="font-semibold text-sm text-foreground mb-5">{t.finance.sixMonthOverview}</h3>
         <ResponsiveContainer width="100%" height={280}>
           <BarChart data={chartData} margin={{ top: 0, right: 0, left: -10, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
             <XAxis dataKey="month" tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
-            <YAxis tick={{ fontSize: 12 }} axisLine={false} tickLine={false} tickFormatter={v => `$${v}`} />
-            <Tooltip formatter={(v: number) => formatCurrency(v)} contentStyle={{ borderRadius: '12px', border: '1px solid var(--border)', fontSize: '12px' }} />
+            <YAxis tick={{ fontSize: 12 }} axisLine={false} tickLine={false} tickFormatter={v => fmt(v as number)} />
+            <Tooltip formatter={(v: number) => fmt(v)} contentStyle={{ borderRadius: '12px', border: '1px solid var(--border)', fontSize: '12px' }} />
             <Legend />
-            <Bar dataKey="revenue" name="Revenue" fill="hsl(199, 89%, 48%)" radius={[4, 4, 0, 0]} />
-            <Bar dataKey="expenses" name="Expenses" fill="hsl(0, 84%, 60%)" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="revenue" name={t.finance.revenue} fill="hsl(199, 89%, 48%)" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="expenses" name={t.finance.expenses} fill="hsl(0, 84%, 60%)" radius={[4, 4, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </div>
@@ -178,7 +182,7 @@ export function FinanceDashboard({
       {/* Recent Transactions */}
       <div className="clinic-card overflow-hidden">
         <div className="p-4 border-b border-border">
-          <h3 className="font-semibold text-sm text-foreground">Recent Payments</h3>
+          <h3 className="font-semibold text-sm text-foreground">{t.finance.recentPayments}</h3>
         </div>
         <div className="divide-y divide-border">
           {recentPayments.map((payment: any) => (
@@ -196,7 +200,7 @@ export function FinanceDashboard({
                   </p>
                 </div>
               </div>
-              <span className="font-semibold text-emerald-600">{formatCurrency(payment.amount)}</span>
+              <span className="font-semibold text-emerald-600">{fmt(payment.amount)}</span>
             </div>
           ))}
         </div>

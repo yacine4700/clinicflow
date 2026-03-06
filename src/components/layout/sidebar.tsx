@@ -1,9 +1,9 @@
-// src/components/layout/sidebar.tsx
 'use client'
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
+import { useT } from '@/components/providers/app-provider'
 import {
   LayoutDashboard, Users, Clock, FileText, DollarSign,
   Settings, Heart, FilePlus, ChevronRight
@@ -11,26 +11,19 @@ import {
 
 type Role = 'DOCTOR' | 'SECRETARY'
 
-interface NavItem {
-  label: string
-  href: string
-  icon: React.ElementType
-  roles?: Role[]
-  badge?: string
-}
-
-const navItems: NavItem[] = [
-  { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-  { label: 'Waiting Room', href: '/waiting-room', icon: Clock },
-  { label: 'Patients', href: '/patients', icon: Users },
-  { label: 'Prescriptions', href: '/prescriptions', icon: FilePlus, roles: ['DOCTOR'] },
-  { label: 'Documents', href: '/documents', icon: FileText, roles: ['DOCTOR'] },
-  { label: 'Finance', href: '/finance', icon: DollarSign, roles: ['DOCTOR'] },
-  { label: 'Settings', href: '/settings', icon: Settings, roles: ['DOCTOR'] },
-]
-
 export function Sidebar({ role }: { role: Role }) {
   const pathname = usePathname()
+  const t = useT()
+
+  const navItems = [
+    { label: t.nav.dashboard,       href: '/dashboard',     icon: LayoutDashboard },
+    { label: t.nav.waitingRoom,     href: '/waiting-room',  icon: Clock },
+    { label: t.nav.patients,        href: '/patients',      icon: Users },
+    { label: t.nav.prescriptions,   href: '/prescriptions', icon: FilePlus,   roles: ['DOCTOR'] as Role[] },
+    { label: t.nav.documents,       href: '/documents',     icon: FileText,   roles: ['DOCTOR'] as Role[] },
+    { label: t.nav.finance,         href: '/finance',       icon: DollarSign, roles: ['DOCTOR'] as Role[] },
+    { label: t.nav.settings,        href: '/settings',      icon: Settings,   roles: ['DOCTOR'] as Role[] },
+  ]
 
   const visibleItems = navItems.filter(item => !item.roles || item.roles.includes(role))
 
@@ -44,7 +37,9 @@ export function Sidebar({ role }: { role: Role }) {
           </div>
           <div>
             <div className="font-bold text-sm text-foreground leading-tight">ClinicFlow</div>
-            <div className="text-[10px] text-muted-foreground uppercase tracking-wide">{role === 'DOCTOR' ? 'Doctor Panel' : 'Secretary'}</div>
+            <div className="text-[10px] text-muted-foreground uppercase tracking-wide">
+              {role === 'DOCTOR' ? t.nav.doctorPanel : t.nav.secretary}
+            </div>
           </div>
         </div>
       </div>
@@ -79,7 +74,7 @@ export function Sidebar({ role }: { role: Role }) {
           role === 'DOCTOR' ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300' : 'bg-sky-50 text-sky-700 dark:bg-sky-950 dark:text-sky-300'
         )}>
           <div className={cn('w-1.5 h-1.5 rounded-full', role === 'DOCTOR' ? 'bg-emerald-500' : 'bg-sky-500')} />
-          {role === 'DOCTOR' ? '🩺 Doctor Access' : '📋 Secretary Access'}
+          {role === 'DOCTOR' ? t.nav.doctorAccess : t.nav.secretaryAccess}
         </div>
       </div>
     </aside>

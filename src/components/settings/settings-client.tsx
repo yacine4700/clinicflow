@@ -5,9 +5,11 @@ import React from 'react'
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { updateClinicSettings } from '@/lib/actions/finance'
-import { Building, FileText, Loader2, Save, Layout, Upload, X } from 'lucide-react'
+import { Building, FileText, Loader2, Save, Layout, Upload, X, Globe } from 'lucide-react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
+import { useApp, useT } from '@/components/providers/app-provider'
+import { LANGUAGES, type Language } from '@/lib/i18n'
 import { PrescriptionDesigner } from './prescription-designer/PrescriptionDesigner'
 import type { PrescriptionLayout } from '@/types/prescription-layout'
 
@@ -18,6 +20,7 @@ interface ClinicSettings {
   prescriptionHeader?: string; prescriptionFooter?: string
   requireMedicalFile: boolean
   logo?: string
+  language?: string
 }
 
 interface SettingsClientProps {
@@ -29,6 +32,8 @@ export function SettingsClient({ settings, templates }: SettingsClientProps) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [activeTab, setActiveTab] = useState<'clinic' | 'prescription' | 'layout' | 'templates'>('clinic')
+  const { setConfig } = useApp()
+  const t = useT()
   const [form, setForm] = useState<ClinicSettings>({
     clinicName: settings?.clinicName || 'My Clinic',
     doctorName: settings?.doctorName || '',
@@ -42,6 +47,7 @@ export function SettingsClient({ settings, templates }: SettingsClientProps) {
     prescriptionFooter: settings?.prescriptionFooter || '',
     requireMedicalFile: settings?.requireMedicalFile || false,
     logo: settings?.logo || '',
+    language: (settings as any)?.language || 'fr',
   })
 
   const update = (key: keyof ClinicSettings, value: unknown) => setForm((f: ClinicSettings) => ({ ...f, [key]: value }))
@@ -50,26 +56,32 @@ export function SettingsClient({ settings, templates }: SettingsClientProps) {
     startTransition(async () => {
       try {
         await updateClinicSettings(form)
-        toast.success('Settings saved')
+        // Update context immediately so UI reflects changes without page reload
+        setConfig({
+          currency: form.currency,
+          language: (form.language as Language) || 'fr',
+          logo: form.logo || null,
+        })
+        toast.success(t.common.saveChanges)
         router.refresh()
       } catch {
-        toast.error('Failed to save settings')
+        toast.error('Erreur')
       }
     })
   }
 
   const tabs = [
-    { id: 'clinic',       label: 'Clinic Info',   icon: Building },
-    { id: 'prescription', label: 'Prescription',  icon: FileText },
-    { id: 'layout',       label: 'Layout Designer', icon: Layout },
-    { id: 'templates',    label: 'Templates',     icon: FileText },
+    { id: 'clinic',       label: t.settings.clinicInfo,       icon: Building },
+    { id: 'prescription', label: t.settings.prescription,     icon: FileText },
+    { id: 'layout',       label: t.settings.layoutDesigner,   icon: Layout },
+    { id: 'templates',    label: t.settings.templates,        icon: FileText },
   ]
 
   return (
     <div className="space-y-6 animate-fade-in">
       <div>
-        <h1 className="text-2xl font-bold text-foreground">Settings</h1>
-        <p className="text-muted-foreground text-sm mt-0.5">Configure your clinic preferences</p>
+        <h1 className="text-2xl font-bold text-foreground">{t.settings.title}</h1>
+        <p className="text-muted-foreground text-sm mt-0.5">{t.settings.subtitle}</p>
       </div>
 
       {/* Tabs */}
@@ -94,7 +106,7 @@ export function SettingsClient({ settings, templates }: SettingsClientProps) {
         <div className="clinic-card p-6 space-y-5 max-w-3xl">
           <h2 className="font-semibold text-foreground flex items-center gap-2">
             <Building className="w-4 h-4 text-primary" />
-            Clinic Information
+            {t.settings.clinicInfo}
           </h2>
 
           {/* Logo upload */}
@@ -106,12 +118,12 @@ export function SettingsClient({ settings, templates }: SettingsClientProps) {
               }
             </div>
             <div className="flex-1">
-              <p className="text-sm font-medium text-foreground mb-1">Clinic Logo</p>
-              <p className="text-xs text-muted-foreground mb-3">Used on prescriptions and documents. PNG or JPG, max 1MB.</p>
+              <p className="text-sm font-medium text-foreground mb-1">{t.settings.logoTitle}</p>
+              <p className="text-xs text-muted-foreground mb-3">{t.settings.logoDesc}</p>
               <div className="flex items-center gap-2">
                 <label className="cursor-pointer flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors">
                   <Upload className="w-3.5 h-3.5" />
-                  {form.logo ? 'Change Logo' : 'Upload Logo'}
+                  {form.logo ? t.settings.changeLogo : t.settings.uploadLogo}
                   <input
                     type="file"
                     accept="image/png,image/jpeg,image/jpg,image/webp"
@@ -119,7 +131,7 @@ export function SettingsClient({ settings, templates }: SettingsClientProps) {
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                       const file = e.target.files?.[0]
                       if (!file) return
-                      if (file.size > 1024 * 1024) { toast.error('Image must be under 1MB'); return }
+                      if (file.size > 1024 * 1024) { toast.error(t.settings.logoTooBig); return }
                       const reader = new FileReader()
                       reader.onload = () => update('logo', reader.result as string)
                       reader.readAsDataURL(file)
@@ -128,7 +140,7 @@ export function SettingsClient({ settings, templates }: SettingsClientProps) {
                 </label>
                 {form.logo && (
                   <button onClick={() => update('logo', '')} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border border-border rounded-lg hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30 transition-colors text-muted-foreground">
-                    <X className="w-3.5 h-3.5" /> Remove
+                    <X className="w-3.5 h-3.5" /> {t.settings.removeLogo}
                   </button>
                 )}
               </div>
@@ -136,11 +148,11 @@ export function SettingsClient({ settings, templates }: SettingsClientProps) {
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-xs font-medium text-muted-foreground">Clinic Name</label>
+              <label className="text-xs font-medium text-muted-foreground">{t.settings.clinicName}</label>
               <input value={form.clinicName} onChange={(e: React.ChangeEvent<HTMLInputElement>) => update('clinicName', e.target.value)} className="input-field mt-1" />
             </div>
             <div>
-              <label className="text-xs font-medium text-muted-foreground">Doctor's Full Name</label>
+              <label className="text-xs font-medium text-muted-foreground">{t.settings.doctorName}</label>
               <input value={form.doctorName} onChange={(e: React.ChangeEvent<HTMLInputElement>) => update('doctorName', e.target.value)} className="input-field mt-1" placeholder="Dr. John Smith" />
             </div>
             <div>
@@ -162,24 +174,30 @@ export function SettingsClient({ settings, templates }: SettingsClientProps) {
           </div>
           <div className="grid grid-cols-2 gap-4 pt-4 border-t border-border">
             <div>
-              <label className="text-xs font-medium text-muted-foreground">Default Consultation Price</label>
+              <label className="text-xs font-medium text-muted-foreground">{t.settings.consultationPrice}</label>
               <div className="relative mt-1">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">$</span>
                 <input type="number" value={form.consultationPrice} onChange={(e: React.ChangeEvent<HTMLInputElement>) => update('consultationPrice', parseFloat(e.target.value))} className="input-field pl-7" />
               </div>
             </div>
             <div>
-              <label className="text-xs font-medium text-muted-foreground">Currency</label>
+              <label className="text-xs font-medium text-muted-foreground">{t.settings.currency}</label>
               <select value={form.currency} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => update('currency', e.target.value)} className="input-field mt-1">
                 {['USD', 'EUR', 'GBP', 'DZD', 'MAD', 'TND'].map(c => <option key={c}>{c}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground flex items-center gap-1"><Globe className="w-3 h-3" /> {t.settings.language}</label>
+              <select value={form.language} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => update('language', e.target.value)} className="input-field mt-1">
+                {LANGUAGES.map(l => <option key={l.code} value={l.code}>{l.label}</option>)}
               </select>
             </div>
           </div>
           <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-xl">
             <input type="checkbox" id="requireFile" checked={form.requireMedicalFile} onChange={(e: React.ChangeEvent<HTMLInputElement>) => update('requireMedicalFile', e.target.checked)} className="w-4 h-4 text-primary rounded cursor-pointer" />
             <label htmlFor="requireFile" className="cursor-pointer">
-              <p className="text-sm font-medium text-foreground">Require Medical File</p>
-              <p className="text-xs text-muted-foreground">All new patients must have a medical file</p>
+              <p className="text-sm font-medium text-foreground">{t.settings.requireMedicalFile}</p>
+              <p className="text-xs text-muted-foreground">{t.settings.requireMedicalFileDesc}</p>
             </label>
           </div>
         </div>
@@ -269,7 +287,7 @@ export function SettingsClient({ settings, templates }: SettingsClientProps) {
           className="flex items-center gap-2 bg-primary text-primary-foreground px-6 py-2.5 rounded-xl text-sm font-medium hover:bg-primary/90 disabled:opacity-50 transition-colors shadow-sm"
         >
           {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-          Save Changes
+          {t.common.saveChanges}
         </button>
       )}
     </div>

@@ -4,7 +4,8 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { formatDate, calculateAge, formatCurrency, cn } from '@/lib/utils'
+import { formatDate, calculateAge, cn } from '@/lib/utils'
+import { useFmt } from '@/components/providers/app-provider'
 import { addToWaitingRoom } from '@/lib/actions/patients'
 import {
   ArrowLeft, User, Phone, Mail, FileText, Clock, FilePlus,
@@ -33,6 +34,7 @@ interface Patient {
 
 export function PatientProfile({ patient, isDoctor }: { patient: Patient; isDoctor: boolean }) {
   const router = useRouter()
+  const fmt = useFmt()
   const [activeTab, setActiveTab] = useState<'overview' | 'prescriptions' | 'payments' | 'documents'>('overview')
   const [showPayment, setShowPayment] = useState(false)
 
@@ -246,7 +248,7 @@ export function PatientProfile({ patient, isDoctor }: { patient: Patient; isDoct
                     {formatDate(p.date)} · {p.method} · By {p.recordedBy.name}
                   </p>
                 </div>
-                <span className="font-semibold text-emerald-600">{formatCurrency(p.amount)}</span>
+                <span className="font-semibold text-emerald-600">{fmt(p.amount)}</span>
               </div>
             ))
           )}

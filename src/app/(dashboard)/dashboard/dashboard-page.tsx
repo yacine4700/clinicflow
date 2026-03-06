@@ -1,24 +1,25 @@
 // src/app/(dashboard)/dashboard/page.tsx
+import React from 'react'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/db/prisma'
 import { getTodayStats } from '@/lib/actions/waiting-room'
 import { getFinancialStats } from '@/lib/actions/finance'
-import { formatCurrency } from '@/lib/utils'
 import { Users, Clock, DollarSign, Activity, TrendingUp, Calendar } from 'lucide-react'
 import { format } from 'date-fns'
-import type { Metadata } from 'next'
-
-export const metadata: Metadata = { title: 'Dashboard' }
+import {
+  DashboardFinanceCards,
+  DashboardMonthlySummary,
+  DashboardGreeting,
+  DashboardQuickLinks,
+} from '@/components/dashboard/dashboard-widgets'
 
 async function getQuickStats() {
   const today = new Date()
   today.setHours(0, 0, 0, 0)
-
   const [totalPatients, todayNew] = await Promise.all([
     prisma.patient.count(),
     prisma.patient.count({ where: { createdAt: { gte: today } } }),
   ])
-
   return { totalPatients, todayNew }
 }
 
@@ -32,20 +33,14 @@ export default async function DashboardPage() {
   ])
 
   const financialStats = isDoctor ? await getFinancialStats() : null
-
-  const greeting = () => {
-    const h = new Date().getHours()
-    if (h < 12) return 'Good morning'
-    if (h < 17) return 'Good afternoon'
-    return 'Good evening'
-  }
+  const firstName = session?.user?.name?.split(' ')[0] ?? ''
 
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-foreground">
-          {greeting()}, {session?.user?.name?.split(' ')[0]} 👋
+          <DashboardGreeting name={firstName} />
         </h1>
         <p className="text-muted-foreground mt-1 flex items-center gap-1.5">
           <Calendar className="w-3.5 h-3.5" />
@@ -56,39 +51,33 @@ export default async function DashboardPage() {
       {/* Stats Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
-          title="Waiting Now"
+          title="En attente"
           value={waitingStats.waiting}
-          sub={`${waitingStats.inConsult} in consultation`}
+          sub={`${waitingStats.inConsult} en consultation`}
           icon={Clock}
           color="sky"
         />
         <StatCard
-          title="Seen Today"
+          title="Vus aujourd'hui"
           value={waitingStats.done}
-          sub={`${waitingStats.total} total today`}
+          sub={`${waitingStats.total} total`}
           icon={Activity}
           color="emerald"
         />
         <StatCard
-          title="Total Patients"
+          title="Total patients"
           value={patientStats.totalPatients}
-          sub={`${patientStats.todayNew} new today`}
+          sub={`${patientStats.todayNew} nouveaux`}
           icon={Users}
           color="violet"
         />
         {isDoctor && financialStats ? (
-          <StatCard
-            title="Today's Revenue"
-            value={formatCurrency(financialStats.todayRevenue)}
-            sub={`${financialStats.todayCount} consultations`}
-            icon={DollarSign}
-            color="amber"
-          />
+          <DashboardFinanceCards stats={financialStats} />
         ) : (
           <StatCard
-            title="Today's Visits"
+            title="Visites aujourd'hui"
             value={waitingStats.total}
-            sub="All statuses"
+            sub="Tous statuts"
             icon={TrendingUp}
             color="amber"
           />
@@ -98,38 +87,10 @@ export default async function DashboardPage() {
       {/* Doctor-only financial summary */}
       {isDoctor && financialStats && (
         <div className="grid grid-cols-3 gap-4">
-          <div className="clinic-card p-5 col-span-2">
-            <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide mb-4">Monthly Summary</h3>
-            <div className="grid grid-cols-3 gap-4">
-              <div>
-                <p className="text-2xl font-bold text-foreground">{formatCurrency(financialStats.monthRevenue)}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">Revenue</p>
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-destructive">{formatCurrency(financialStats.monthExpenses)}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">Expenses</p>
-              </div>
-              <div>
-                <p className={`text-2xl font-bold ${financialStats.netIncome >= 0 ? 'text-emerald-600' : 'text-destructive'}`}>
-                  {formatCurrency(financialStats.netIncome)}
-                </p>
-                <p className="text-xs text-muted-foreground mt-0.5">Net Income</p>
-              </div>
-            </div>
-          </div>
+          <DashboardMonthlySummary stats={financialStats} />
           <div className="clinic-card p-5">
-            <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide mb-4">Quick Links</h3>
-            <div className="space-y-2">
-              {[
-                { label: 'New Prescription', href: '/prescriptions/new' },
-                { label: 'View Finance', href: '/finance' },
-                { label: 'Patient Records', href: '/patients' },
-              ].map(link => (
-                <a key={link.href} href={link.href} className="block text-sm text-primary hover:underline">
-                  → {link.label}
-                </a>
-              ))}
-            </div>
+            <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide mb-4">Accès rapides</h3>
+            <DashboardQuickLinks />
           </div>
         </div>
       )}
@@ -182,9 +143,9 @@ async function RecentActivity() {
 
   return (
     <div className="clinic-card p-5">
-      <h3 className="font-semibold text-sm text-foreground mb-4">Today's Activity</h3>
+      <h3 className="font-semibold text-sm text-foreground mb-4">Activité du jour</h3>
       {recent.length === 0 ? (
-        <p className="text-muted-foreground text-sm text-center py-6">No activity recorded today</p>
+        <p className="text-muted-foreground text-sm text-center py-6">Aucune activité enregistrée aujourd'hui</p>
       ) : (
         <div className="space-y-2">
           {recent.map(entry => (
