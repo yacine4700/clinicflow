@@ -1,4 +1,3 @@
-// src/components/auth/login-form.tsx
 'use client'
 
 import { useState } from 'react'
@@ -10,9 +9,13 @@ import { z } from 'zod'
 import { Loader2, Eye, EyeOff } from 'lucide-react'
 import { toast } from 'sonner'
 
+// Login form uses hardcoded default language (fr) since AppProvider isn't available on auth pages
+// The messages are loaded directly from JSON
+import fr from '../../../messages/fr.json'
+
 const schema = z.object({
-  email: z.string().email('Invalid email'),
-  password: z.string().min(6, 'Password too short'),
+  email: z.string().email(fr.auth.invalidEmail),
+  password: z.string().min(6, fr.auth.passwordTooShort),
 })
 
 type FormData = z.infer<typeof schema>
@@ -32,9 +35,8 @@ export function LoginForm() {
     })
 
     if (result?.error) {
-      toast.error('Invalid email or password')
+      toast.error(fr.auth.invalidCredentials)
     } else {
-      toast.success('Welcome back!')
       router.push('/dashboard')
       router.refresh()
     }
@@ -43,19 +45,19 @@ export function LoginForm() {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <div>
-        <label className="block text-sm font-medium text-foreground mb-1.5">Email address</label>
+        <label className="block text-sm font-medium text-foreground mb-1.5">{fr.auth.email}</label>
         <input
           {...register('email')}
           type="email"
           autoComplete="email"
-          placeholder="doctor@clinic.com"
+          placeholder={fr.auth.emailPlaceholder}
           className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all text-sm"
         />
         {errors.email && <p className="text-destructive text-xs mt-1">{errors.email.message}</p>}
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-foreground mb-1.5">Password</label>
+        <label className="block text-sm font-medium text-foreground mb-1.5">{fr.auth.password}</label>
         <div className="relative">
           <input
             {...register('password')}
@@ -83,10 +85,10 @@ export function LoginForm() {
         {isSubmitting ? (
           <>
             <Loader2 className="w-4 h-4 animate-spin" />
-            Signing in...
+            {fr.auth.signingIn}
           </>
         ) : (
-          'Sign in'
+          fr.auth.signInButton
         )}
       </button>
     </form>

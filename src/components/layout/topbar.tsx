@@ -22,7 +22,6 @@ export function TopBar({ user }: TopBarProps) {
   const handleLanguageChange = async (lang: Language) => {
     setConfig({ language: lang })
     setShowLangMenu(false)
-    // Persist to DB (fire-and-forget, no need to await in UI)
     updateClinicSettings({ language: lang }).catch(() => {})
   }
 
@@ -34,7 +33,7 @@ export function TopBar({ user }: TopBarProps) {
         <div>
           <p className="text-sm font-semibold text-foreground leading-tight">{user.name}</p>
           <p className="text-xs text-muted-foreground">
-            {user.role === 'DOCTOR' ? 'Médecin' : 'Secrétariat'}
+            {user.role === 'DOCTOR' ? t('nav.doctorPanel') : t('nav.secretary')}
           </p>
         </div>
       </div>
@@ -56,20 +55,19 @@ export function TopBar({ user }: TopBarProps) {
 
           {showLangMenu && (
             <>
-              {/* Backdrop */}
               <div className="fixed inset-0 z-10" onClick={() => setShowLangMenu(false)} />
-              <div className="absolute right-0 top-full mt-1 z-20 bg-card border border-border rounded-xl shadow-lg overflow-hidden min-w-[130px]">
+              <div className="absolute right-0 top-full mt-1 z-20 bg-card border border-border rounded-xl shadow-lg overflow-hidden min-w-[140px]">
                 {LANGUAGES.map(lang => (
                   <button
                     key={lang.code}
                     onClick={() => handleLanguageChange(lang.code)}
                     className={cn(
-                      'w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-accent transition-colors',
+                      'w-full flex items-center gap-2 px-3 py-2.5 text-sm hover:bg-accent transition-colors',
                       language === lang.code ? 'text-primary font-medium bg-primary/5' : 'text-foreground'
                     )}
                   >
                     {lang.label}
-                    {lang.dir === 'rtl' && <span className="text-xs text-muted-foreground ml-auto">RTL</span>}
+                    {lang.dir === 'rtl' && <span className="text-xs text-muted-foreground ms-auto">RTL</span>}
                   </button>
                 ))}
               </div>
@@ -77,7 +75,7 @@ export function TopBar({ user }: TopBarProps) {
           )}
         </div>
 
-        <div className="flex items-center gap-2 pl-2 border-l border-border">
+        <div className="flex items-center gap-2 ps-2 border-s border-border">
           <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-primary-foreground text-xs font-bold">
             {getInitials(user.name)}
           </div>
@@ -86,7 +84,7 @@ export function TopBar({ user }: TopBarProps) {
             className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-destructive transition-colors px-2 py-1 rounded-lg hover:bg-destructive/5"
           >
             <LogOut className="w-3.5 h-3.5" />
-            {t.common.signOut}
+            {t('common.signOut')}
           </button>
         </div>
       </div>

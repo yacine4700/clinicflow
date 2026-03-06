@@ -1,4 +1,3 @@
-// src/components/prescriptions/prescription-editor.tsx
 'use client'
 
 import { useState, useTransition, useCallback } from 'react'
@@ -7,6 +6,7 @@ import { createPrescription, searchDrugs } from '@/lib/actions/prescriptions'
 import { Plus, Trash2, ArrowLeft, Loader2, FileText, Save, Search } from 'lucide-react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
+import { useT } from '@/components/providers/app-provider'
 
 interface DrugItem {
   drugName: string
@@ -30,6 +30,7 @@ export function PrescriptionEditor({
   defaultPatientId?: string
 }) {
   const router = useRouter()
+  const t = useT()
   const [isPending, startTransition] = useTransition()
   const [patientId, setPatientId] = useState(defaultPatientId || '')
   const [diagnosis, setDiagnosis] = useState('')
@@ -37,7 +38,7 @@ export function PrescriptionEditor({
   const [items, setItems] = useState<DrugItem[]>([
     { drugName: '', dosage: '', frequency: '', duration: '', instructions: '' }
   ])
-  const [drugSuggestions, setDrugSuggestions] = useState<any[]>([])
+  const [drugSuggestions, setDrugSuggestions] = useState<{ id: string; name: string; category: string; genericName: string; commonDosages: string[] }[]>([])
   const [activeSearch, setActiveSearch] = useState<number | null>(null)
   const [searchLoading, setSearchLoading] = useState(false)
 
@@ -55,7 +56,7 @@ export function PrescriptionEditor({
     if (field === 'drugName') searchForDrugs(value, index)
   }
 
-  const selectDrug = (index: number, drug: any) => {
+  const selectDrug = (index: number, drug: { name: string; commonDosages: string[] }) => {
     setItems(prev => prev.map((item, i) => i === index ? {
       ...item,
       drugName: drug.name,
@@ -70,26 +71,51 @@ export function PrescriptionEditor({
 
   const applyTemplate = (template: Template) => {
     setItems(template.items.map(item => ({ ...item, instructions: item.instructions || '' })))
-    toast.success(`Template "${template.name}" applied`)
+    toast.success(t('prescriptions.toast.templateApplied', { name: template.name }))
   }
 
   const handleSubmit = () => {
-    if (!patientId) { toast.error('Please select a patient'); return }
+    if (!patientId) { toast.error(t('prescriptions.toast.noPatient')); return }
     const validItems = items.filter(i => i.drugName && i.dosage && i.frequency && i.duration)
-    if (validItems.length === 0) { toast.error('Add at least one complete medication'); return }
+    if (validItems.length === 0) { toast.error(t('prescriptions.toast.noMeds')); return }
 
     startTransition(async () => {
-      try {
-        const result = await createPrescription({ patientId, diagnosis, notes, items: validItems })
-        if (result.success) {
-          toast.success('Prescription created')
-          router.push(`/prescriptions/${result.prescription.id}`)
-        }
-      } catch {
-        toast.error('Failed to create prescription')
+      const result = await createPrescription({
+        patientId,
+        diagnosis,
+        notes,
+        items: validItems,
+        consultationFee: settings?.consultationPrice,
+      })
+      if (result.success) {
+        toast.success(t('prescriptions.toast.saved'))
+        router.push(`/prescriptions/${result.id}`)
       }
     })
   }
+
+  const frequencies = [
+    t('prescriptions.frequencies.onceDaily'),
+    t('prescriptions.frequencies.twiceDaily'),
+    t('prescriptions.frequencies.thriceDaily'),
+    t('prescriptions.frequencies.fourTimesDaily'),
+    t('prescriptions.frequencies.every8h'),
+    t('prescriptions.frequencies.every12h'),
+    t('prescriptions.frequencies.prn'),
+    t('prescriptions.frequencies.atNight'),
+    t('prescriptions.frequencies.beforeBreakfast'),
+  ]
+
+  const durations = [
+    t('prescriptions.durations.3days'),
+    t('prescriptions.durations.5days'),
+    t('prescriptions.durations.7days'),
+    t('prescriptions.durations.10days'),
+    t('prescriptions.durations.14days'),
+    t('prescriptions.durations.1month'),
+    t('prescriptions.durations.3months'),
+    t('prescriptions.durations.ongoing'),
+  ]
 
   return (
     <div className="space-y-6 animate-fade-in max-w-4xl">
@@ -98,35 +124,35 @@ export function PrescriptionEditor({
           <ArrowLeft className="w-5 h-5" />
         </button>
         <div>
-          <h1 className="text-2xl font-bold text-foreground">New Prescription</h1>
-          <p className="text-muted-foreground text-sm">Dr. {doctorName}</p>
+          <h1 className="text-2xl font-bold text-foreground">{t('prescriptions.newPrescription')}</h1>
+          <p className="text-muted-foreground text-sm">{t('prescriptions.dr')} {doctorName}</p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Form */}
         <div className="lg:col-span-2 space-y-5">
-          {/* Patient Selection */}
+          {/* Patient */}
           <div className="clinic-card p-5">
-            <h2 className="font-semibold text-sm text-foreground mb-3">Patient</h2>
+            <h2 className="font-semibold text-sm text-foreground mb-3">{t('prescriptions.patient')}</h2>
             <select
               value={patientId}
               onChange={e => setPatientId(e.target.value)}
               className="input-field"
             >
-              <option value="">Select patient...</option>
+              <option value="">{t('prescriptions.selectPatient')}</option>
               {patients.map(p => (
                 <option key={p.id} value={p.id}>{p.firstName} {p.lastName}</option>
               ))}
             </select>
 
             <div className="mt-3">
-              <label className="text-xs font-medium text-muted-foreground">Diagnosis / Reason</label>
+              <label className="text-xs font-medium text-muted-foreground">{t('prescriptions.diagnosis')}</label>
               <input
                 value={diagnosis}
                 onChange={e => setDiagnosis(e.target.value)}
                 className="input-field mt-1"
-                placeholder="e.g., Upper respiratory tract infection"
+                placeholder={t('prescriptions.diagnosisPlaceholder')}
               />
             </div>
           </div>
@@ -134,10 +160,10 @@ export function PrescriptionEditor({
           {/* Medications */}
           <div className="clinic-card p-5">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="font-semibold text-sm text-foreground">Medications</h2>
+              <h2 className="font-semibold text-sm text-foreground">{t('prescriptions.medications')}</h2>
               <button onClick={addItem} className="flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 font-medium transition-colors">
                 <Plus className="w-3.5 h-3.5" />
-                Add Drug
+                {t('prescriptions.addDrug')}
               </button>
             </div>
 
@@ -145,7 +171,9 @@ export function PrescriptionEditor({
               {items.map((item, index) => (
                 <div key={index} className="relative bg-muted/30 rounded-xl p-4 space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-muted-foreground uppercase">Drug {index + 1}</span>
+                    <span className="text-xs font-medium text-muted-foreground uppercase">
+                      {t('prescriptions.drug')} {index + 1}
+                    </span>
                     {items.length > 1 && (
                       <button onClick={() => removeItem(index)} className="text-muted-foreground hover:text-destructive transition-colors">
                         <Trash2 className="w-3.5 h-3.5" />
@@ -153,7 +181,6 @@ export function PrescriptionEditor({
                     )}
                   </div>
 
-                  {/* Drug Name with autocomplete */}
                   <div className="relative">
                     <div className="relative">
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
@@ -162,7 +189,7 @@ export function PrescriptionEditor({
                         onChange={e => updateItem(index, 'drugName', e.target.value)}
                         onBlur={() => setTimeout(() => { setDrugSuggestions([]); setActiveSearch(null) }, 200)}
                         className="input-field pl-8"
-                        placeholder="Drug name (type to search)"
+                        placeholder={t('prescriptions.searchDrug')}
                       />
                     </div>
                     {activeSearch === index && drugSuggestions.length > 0 && (
@@ -183,49 +210,45 @@ export function PrescriptionEditor({
 
                   <div className="grid grid-cols-3 gap-2">
                     <div>
-                      <label className="text-xs text-muted-foreground">Dosage</label>
+                      <label className="text-xs text-muted-foreground">{t('prescriptions.dosage')}</label>
                       <input
                         value={item.dosage}
                         onChange={e => updateItem(index, 'dosage', e.target.value)}
                         className="input-field mt-0.5"
-                        placeholder="500mg"
+                        placeholder={t('prescriptions.dosagePlaceholder')}
                       />
                     </div>
                     <div>
-                      <label className="text-xs text-muted-foreground">Frequency</label>
+                      <label className="text-xs text-muted-foreground">{t('prescriptions.frequency')}</label>
                       <select
                         value={item.frequency}
                         onChange={e => updateItem(index, 'frequency', e.target.value)}
                         className="input-field mt-0.5"
                       >
-                        <option value="">Select...</option>
-                        {['Once daily', '2x/day', '3x/day', '4x/day', 'Every 8h', 'Every 12h', 'PRN', 'Once at night', 'Once before breakfast'].map(f => (
-                          <option key={f} value={f}>{f}</option>
-                        ))}
+                        <option value="">{t('prescriptions.selectFrequency')}</option>
+                        {frequencies.map(f => <option key={f} value={f}>{f}</option>)}
                       </select>
                     </div>
                     <div>
-                      <label className="text-xs text-muted-foreground">Duration</label>
+                      <label className="text-xs text-muted-foreground">{t('prescriptions.duration')}</label>
                       <select
                         value={item.duration}
                         onChange={e => updateItem(index, 'duration', e.target.value)}
                         className="input-field mt-0.5"
                       >
-                        <option value="">Select...</option>
-                        {['3 days', '5 days', '7 days', '10 days', '14 days', '1 month', '3 months', 'Ongoing'].map(d => (
-                          <option key={d} value={d}>{d}</option>
-                        ))}
+                        <option value="">{t('prescriptions.selectDuration')}</option>
+                        {durations.map(d => <option key={d} value={d}>{d}</option>)}
                       </select>
                     </div>
                   </div>
 
                   <div>
-                    <label className="text-xs text-muted-foreground">Instructions (optional)</label>
+                    <label className="text-xs text-muted-foreground">{t('prescriptions.instructions')} ({t('common.optional')})</label>
                     <input
                       value={item.instructions}
                       onChange={e => updateItem(index, 'instructions', e.target.value)}
                       className="input-field mt-0.5"
-                      placeholder="Take after meals, with water..."
+                      placeholder={t('prescriptions.instructionsPlaceholder')}
                     />
                   </div>
                 </div>
@@ -235,20 +258,20 @@ export function PrescriptionEditor({
 
           {/* Notes */}
           <div className="clinic-card p-5">
-            <h2 className="font-semibold text-sm text-foreground mb-3">Additional Notes</h2>
+            <h2 className="font-semibold text-sm text-foreground mb-3">{t('prescriptions.notes')}</h2>
             <textarea
               value={notes}
               onChange={e => setNotes(e.target.value)}
               className="input-field"
               rows={3}
-              placeholder="Special instructions, follow-up advice..."
+              placeholder={t('prescriptions.notesPlaceholder')}
             />
           </div>
 
           {/* Actions */}
           <div className="flex gap-3">
             <button onClick={() => router.back()} className="flex-1 px-4 py-2.5 border border-border rounded-xl text-sm font-medium hover:bg-accent transition-colors">
-              Cancel
+              {t('common.cancel')}
             </button>
             <button
               onClick={handleSubmit}
@@ -256,20 +279,20 @@ export function PrescriptionEditor({
               className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground rounded-xl text-sm font-medium hover:bg-primary/90 disabled:opacity-50 transition-colors"
             >
               {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-              Save Prescription
+              {isPending ? t('prescriptions.saving') : t('prescriptions.savePrescription')}
             </button>
           </div>
         </div>
 
-        {/* Templates Sidebar */}
+        {/* Templates */}
         <div className="space-y-4">
           <div className="clinic-card p-4">
             <h3 className="font-semibold text-sm text-foreground mb-3 flex items-center gap-2">
               <FileText className="w-4 h-4 text-primary" />
-              Templates
+              {t('prescriptions.templates')}
             </h3>
             {templates.length === 0 ? (
-              <p className="text-xs text-muted-foreground">No templates saved</p>
+              <p className="text-xs text-muted-foreground">{t('prescriptions.noTemplates')}</p>
             ) : (
               <div className="space-y-2">
                 {templates.map(template => (
@@ -279,7 +302,9 @@ export function PrescriptionEditor({
                     className="w-full text-left px-3 py-2.5 rounded-xl hover:bg-accent transition-colors border border-border"
                   >
                     <p className="text-sm font-medium text-foreground">{template.name}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">{(template.items as DrugItem[]).length} medications</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {(template.items as DrugItem[]).length} {t('settings.items')}
+                    </p>
                   </button>
                 ))}
               </div>

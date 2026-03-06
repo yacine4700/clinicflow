@@ -1,10 +1,16 @@
 // src/app/(auth)/login/page.tsx
 import { LoginForm } from '@/components/auth/login-form'
-import type { Metadata } from 'next'
-
-export const metadata: Metadata = { title: 'Sign In' }
+import fr from '../../../../messages/fr.json'
 
 export default function LoginPage() {
+  const a = fr.auth
+  const features = [
+    { icon: '👤', label: a.featurePatients },
+    { icon: '💊', label: a.featurePrescriptions },
+    { icon: '🏥', label: a.featureWaiting },
+    { icon: '📊', label: a.featureAnalytics },
+  ]
+
   return (
     <div className="min-h-screen flex">
       {/* Left Panel */}
@@ -28,20 +34,12 @@ export default function LoginPage() {
         <div className="relative z-10 space-y-6">
           <div>
             <h1 className="text-4xl font-bold text-white leading-tight">
-              Modern clinic<br />management,<br />
-              <span className="text-cyan-200">simplified.</span>
+              {a.tagline}
             </h1>
-            <p className="mt-4 text-sky-100 text-lg leading-relaxed">
-              Manage patients, prescriptions, waiting rooms, and finances — all in one place.
-            </p>
+            <p className="mt-4 text-sky-100 text-lg leading-relaxed">{a.taglineDesc}</p>
           </div>
           <div className="grid grid-cols-2 gap-4">
-            {[
-              { icon: '👤', label: 'Patient Records' },
-              { icon: '💊', label: 'Prescriptions' },
-              { icon: '🏥', label: 'Waiting Room' },
-              { icon: '📊', label: 'Analytics' },
-            ].map(item => (
+            {features.map(item => (
               <div key={item.label} className="bg-white/10 backdrop-blur-sm rounded-xl p-3 flex items-center gap-2">
                 <span className="text-xl">{item.icon}</span>
                 <span className="text-white text-sm font-medium">{item.label}</span>
@@ -49,9 +47,7 @@ export default function LoginPage() {
             ))}
           </div>
         </div>
-        <div className="relative z-10 text-sky-200 text-sm">
-          © 2024 ClinicFlow. All rights reserved.
-        </div>
+        <div className="relative z-10 text-sky-200 text-sm">{a.copyright}</div>
       </div>
 
       {/* Right Panel */}
@@ -67,18 +63,18 @@ export default function LoginPage() {
           </div>
 
           <div className="mb-8">
-            <h2 className="text-2xl font-bold text-foreground">Welcome back</h2>
-            <p className="text-muted-foreground mt-1">Sign in to access your clinic dashboard</p>
+            <h2 className="text-2xl font-bold text-foreground">{a.welcomeBack}</h2>
+            <p className="text-muted-foreground mt-1">{a.welcomeSubtitle}</p>
           </div>
 
           <LoginForm />
 
           <div className="mt-6 p-4 bg-muted/50 rounded-xl">
-            <p className="text-xs font-medium text-muted-foreground mb-2">Demo credentials:</p>
+            <p className="text-xs font-medium text-muted-foreground mb-2">{a.demoTitle}</p>
             <div className="space-y-1">
-              <p className="text-xs text-foreground">🩺 <strong>Doctor:</strong> doctor@clinic.com</p>
-              <p className="text-xs text-foreground">📋 <strong>Secretary:</strong> secretary@clinic.com</p>
-              <p className="text-xs text-muted-foreground">Password: password123</p>
+              <p className="text-xs text-foreground">🩺 <strong>{a.demoDoctor}:</strong> doctor@clinic.com</p>
+              <p className="text-xs text-foreground">📋 <strong>{a.demoSecretary}:</strong> secretary@clinic.com</p>
+              <p className="text-xs text-muted-foreground">{a.demoPassword}</p>
             </div>
           </div>
         </div>

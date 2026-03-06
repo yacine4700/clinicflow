@@ -1,8 +1,8 @@
 'use client'
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react'
-import type { Language, Translations } from '@/lib/i18n'
-import { getTranslations, LANGUAGES } from '@/lib/i18n'
+import type { Language, Messages } from '@/lib/i18n'
+import { getMessages, LANGUAGES, interpolate } from '@/lib/i18n'
 import { formatCurrency as baseFmt } from '@/lib/utils'
 
 interface AppConfig {
@@ -15,7 +15,10 @@ interface AppContextValue {
   currency: string
   language: Language
   logo: string | null
-  t: Translations
+  m: Messages
+  // Translate a dot-notation key with optional variable interpolation
+  // e.g. t('finance.toast.paymentRecorded', { amount: '$50' })
+  t: (key: string, vars?: Record<string, string | number>) => string
   dir: 'ltr' | 'rtl'
   fmt: (amount: number) => string
   setConfig: (patch: Partial<AppConfig>) => void
@@ -29,9 +32,14 @@ export function useApp(): AppContextValue {
   return ctx
 }
 
-// Convenience hook – just the translator
-export function useT(): Translations {
+// Convenience hook – just the translator function
+export function useT() {
   return useApp().t
+}
+
+// Convenience hook – just the messages object (for section access)
+export function useMessages() {
+  return useApp().m
 }
 
 // Convenience hook – just currency formatter
@@ -57,11 +65,25 @@ export function AppProvider({ children, initialCurrency, initialLanguage, initia
     setConfigState(prev => ({ ...prev, ...patch }))
   }, [])
 
-  const t = getTranslations(config.language)
+  const m = getMessages(config.language)
   const dir = LANGUAGES.find(l => l.code === config.language)?.dir ?? 'ltr'
   const fmt = useCallback((amount: number) => baseFmt(amount, config.currency), [config.currency])
 
-  // Sync html dir + lang attribute for RTL (Arabic) support
+  // Translate key with optional interpolation
+  const t = useCallback((key: string, vars?: Record<string, string | number>): string => {
+    const parts = key.split('.')
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let val: any = m
+    for (const part of parts) {
+      if (val == null) return key
+      val = val[part]
+    }
+    if (Array.isArray(val)) return val.join(', ')
+    if (typeof val !== 'string') return key
+    return interpolate(val, vars)
+  }, [m])
+
+  // Sync html dir + lang for RTL support
   useEffect(() => {
     document.documentElement.setAttribute('lang', config.language)
     document.documentElement.setAttribute('dir', dir)
@@ -69,18 +91,14 @@ export function AppProvider({ children, initialCurrency, initialLanguage, initia
 
   // Dynamic favicon from logo
   useEffect(() => {
-    if (!config.logo) {
-      // Restore default favicon
-      updateFavicon('/favicon.ico')
-      return
-    }
-    updateFavicon(config.logo)
+    updateFavicon(config.logo || '/favicon.ico')
   }, [config.logo])
 
   const value: AppContextValue = {
     currency: config.currency,
     language: config.language,
     logo: config.logo,
+    m,
     t,
     dir,
     fmt,
@@ -91,9 +109,7 @@ export function AppProvider({ children, initialCurrency, initialLanguage, initia
 }
 
 function updateFavicon(href: string) {
-  // Remove existing dynamic favicons
   document.querySelectorAll('link[data-dynamic-favicon]').forEach(el => el.remove())
-
   const link = document.createElement('link')
   link.rel = 'icon'
   link.setAttribute('data-dynamic-favicon', 'true')

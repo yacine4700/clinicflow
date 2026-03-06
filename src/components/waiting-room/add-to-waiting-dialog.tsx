@@ -1,14 +1,15 @@
-// src/components/waiting-room/add-to-waiting-dialog.tsx
 'use client'
 
 import { useState, useTransition } from 'react'
 import { getPatients, addToWaitingRoom } from '@/lib/actions/patients'
 import { X, Search, UserPlus, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
+import { useT } from '@/components/providers/app-provider'
 
 interface Patient { id: string; firstName: string; lastName: string; phone: string | null }
 
 export function AddToWaitingDialog({ onClose, onAdd }: { onClose: () => void; onAdd: () => void }) {
+  const t = useT()
   const [search, setSearch] = useState('')
   const [patients, setPatients] = useState<Patient[]>([])
   const [selected, setSelected] = useState<Patient | null>(null)
@@ -22,7 +23,7 @@ export function AddToWaitingDialog({ onClose, onAdd }: { onClose: () => void; on
     if (q.length < 2) { setPatients([]); return }
     setSearching(true)
     const results = await getPatients(q)
-    setPatients(results as any)
+    setPatients(results as Patient[])
     setSearching(false)
   }
 
@@ -31,10 +32,10 @@ export function AddToWaitingDialog({ onClose, onAdd }: { onClose: () => void; on
     startTransition(async () => {
       const result = await addToWaitingRoom(selected.id, notes, urgent ? 1 : 0)
       if (result.success) {
-        toast.success(`${selected.firstName} ${selected.lastName} added to queue`)
+        toast.success(`${selected.firstName} ${selected.lastName} — ${t('waitingRoom.addToQueue')}`)
         onAdd()
       } else {
-        toast.error(result.error || 'Failed to add')
+        toast.error(result.error || t('common.noData'))
       }
     })
   }
@@ -45,7 +46,7 @@ export function AddToWaitingDialog({ onClose, onAdd }: { onClose: () => void; on
         <div className="flex items-center justify-between p-5 border-b border-border">
           <div className="flex items-center gap-2">
             <UserPlus className="w-5 h-5 text-primary" />
-            <h2 className="font-semibold text-foreground">Add to Waiting Room</h2>
+            <h2 className="font-semibold text-foreground">{t('waitingRoom.addToWaiting')}</h2>
           </div>
           <button onClick={onClose} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-accent text-muted-foreground">
             <X className="w-4 h-4" />
@@ -60,7 +61,7 @@ export function AddToWaitingDialog({ onClose, onAdd }: { onClose: () => void; on
                 <input
                   value={search}
                   onChange={e => handleSearch(e.target.value)}
-                  placeholder="Search patient by name or phone..."
+                  placeholder={t('waitingRoom.searchPatient')}
                   className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                   autoFocus
                 />
@@ -89,7 +90,8 @@ export function AddToWaitingDialog({ onClose, onAdd }: { onClose: () => void; on
 
               {search.length >= 2 && patients.length === 0 && !searching && (
                 <p className="text-sm text-muted-foreground text-center py-4">
-                  No patients found. <a href="/patients/new" className="text-primary hover:underline">Register new patient</a>
+                  {t('waitingRoom.noResults')}{' '}
+                  <a href="/patients" className="text-primary hover:underline">{t('waitingRoom.registerNew')}</a>
                 </p>
               )}
             </>
@@ -109,11 +111,11 @@ export function AddToWaitingDialog({ onClose, onAdd }: { onClose: () => void; on
               </div>
 
               <div>
-                <label className="text-xs font-medium text-muted-foreground">Notes (optional)</label>
+                <label className="text-xs font-medium text-muted-foreground">{t('waitingRoom.addNote')}</label>
                 <input
                   value={notes}
                   onChange={e => setNotes(e.target.value)}
-                  placeholder="Reason for visit, special notes..."
+                  placeholder={t('waitingRoom.noteHint')}
                   className="w-full mt-1 px-3 py-2 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                 />
               </div>
@@ -126,8 +128,8 @@ export function AddToWaitingDialog({ onClose, onAdd }: { onClose: () => void; on
                   className="w-4 h-4 text-primary rounded"
                 />
                 <div>
-                  <p className="text-sm font-medium text-foreground">Mark as urgent</p>
-                  <p className="text-xs text-muted-foreground">Will appear at top of queue</p>
+                  <p className="text-sm font-medium text-foreground">{t('waitingRoom.markAsUrgent')}</p>
+                  <p className="text-xs text-muted-foreground">{t('waitingRoom.urgentHint')}</p>
                 </div>
               </label>
             </div>
@@ -136,7 +138,7 @@ export function AddToWaitingDialog({ onClose, onAdd }: { onClose: () => void; on
 
         <div className="flex gap-2 p-5 border-t border-border">
           <button onClick={onClose} className="flex-1 px-4 py-2.5 rounded-xl border border-border text-sm font-medium hover:bg-accent transition-colors">
-            Cancel
+            {t('common.cancel')}
           </button>
           {selected && (
             <button
@@ -145,7 +147,7 @@ export function AddToWaitingDialog({ onClose, onAdd }: { onClose: () => void; on
               className="flex-1 px-4 py-2.5 bg-primary text-primary-foreground rounded-xl text-sm font-medium hover:bg-primary/90 disabled:opacity-50 flex items-center justify-center gap-2 transition-colors"
             >
               {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4" />}
-              Add to Queue
+              {t('waitingRoom.addToQueue')}
             </button>
           )}
         </div>

@@ -1,6 +1,5 @@
 'use client'
 import React from 'react'
-// src/components/settings/settings-client.tsx
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
@@ -25,7 +24,7 @@ interface ClinicSettings {
 
 interface SettingsClientProps {
   settings: (ClinicSettings & { prescriptionLayout?: PrescriptionLayout }) | null
-  templates: any[]
+  templates: { id: string; name: string; description?: string; items: unknown[] }[]
 }
 
 export function SettingsClient({ settings, templates }: SettingsClientProps) {
@@ -35,53 +34,54 @@ export function SettingsClient({ settings, templates }: SettingsClientProps) {
   const { setConfig } = useApp()
   const t = useT()
   const [form, setForm] = useState<ClinicSettings>({
-    clinicName: settings?.clinicName || 'My Clinic',
+    clinicName: settings?.clinicName || 'Ma Clinique',
     doctorName: settings?.doctorName || '',
     doctorSpecialty: settings?.doctorSpecialty || '',
     address: settings?.address || '',
     phone: settings?.phone || '',
     email: settings?.email || '',
     consultationPrice: settings?.consultationPrice || 75,
-    currency: settings?.currency || 'USD',
+    currency: settings?.currency || 'DZD',
     prescriptionHeader: settings?.prescriptionHeader || '',
     prescriptionFooter: settings?.prescriptionFooter || '',
     requireMedicalFile: settings?.requireMedicalFile || false,
     logo: settings?.logo || '',
-    language: (settings as any)?.language || 'fr',
+    language: (settings as { language?: string })?.language || 'fr',
   })
 
-  const update = (key: keyof ClinicSettings, value: unknown) => setForm((f: ClinicSettings) => ({ ...f, [key]: value }))
+  const update = (key: keyof ClinicSettings, value: unknown) =>
+    setForm((f: ClinicSettings) => ({ ...f, [key]: value }))
 
   const handleSave = () => {
     startTransition(async () => {
       try {
         await updateClinicSettings(form)
-        // Update context immediately so UI reflects changes without page reload
         setConfig({
           currency: form.currency,
           language: (form.language as Language) || 'fr',
           logo: form.logo || null,
         })
-        toast.success(t.common.saveChanges)
+        toast.success(t('settings.saved'))
         router.refresh()
       } catch {
-        toast.error('Erreur')
+        toast.error(t('common.noData'))
       }
     })
   }
 
   const tabs = [
-    { id: 'clinic',       label: t.settings.clinicInfo,       icon: Building },
-    { id: 'prescription', label: t.settings.prescription,     icon: FileText },
-    { id: 'layout',       label: t.settings.layoutDesigner,   icon: Layout },
-    { id: 'templates',    label: t.settings.templates,        icon: FileText },
-  ]
+    { id: 'clinic',        label: t('settings.clinicInfo'),      icon: Building },
+    { id: 'prescription',  label: t('settings.prescription'),     icon: FileText },
+    { id: 'layout',        label: t('settings.layoutDesigner'),   icon: Layout },
+    { id: 'templates',     label: t('settings.templates'),        icon: FileText },
+  ] as const
 
   return (
     <div className="space-y-6 animate-fade-in">
+      {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-foreground">{t.settings.title}</h1>
-        <p className="text-muted-foreground text-sm mt-0.5">{t.settings.subtitle}</p>
+        <h1 className="text-2xl font-bold text-foreground">{t('settings.title')}</h1>
+        <p className="text-muted-foreground text-sm mt-0.5">{t('settings.subtitle')}</p>
       </div>
 
       {/* Tabs */}
@@ -89,10 +89,12 @@ export function SettingsClient({ settings, templates }: SettingsClientProps) {
         {tabs.map(tab => (
           <button
             key={tab.id}
-            onClick={() => setActiveTab(tab.id as any)}
+            onClick={() => setActiveTab(tab.id)}
             className={cn(
               'flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all',
-              activeTab === tab.id ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+              activeTab === tab.id
+                ? 'bg-card text-foreground shadow-sm'
+                : 'text-muted-foreground hover:text-foreground'
             )}
           >
             <tab.icon className="w-3.5 h-3.5" />
@@ -106,7 +108,7 @@ export function SettingsClient({ settings, templates }: SettingsClientProps) {
         <div className="clinic-card p-6 space-y-5 max-w-3xl">
           <h2 className="font-semibold text-foreground flex items-center gap-2">
             <Building className="w-4 h-4 text-primary" />
-            {t.settings.clinicInfo}
+            {t('settings.clinicInfo')}
           </h2>
 
           {/* Logo upload */}
@@ -118,12 +120,12 @@ export function SettingsClient({ settings, templates }: SettingsClientProps) {
               }
             </div>
             <div className="flex-1">
-              <p className="text-sm font-medium text-foreground mb-1">{t.settings.logoTitle}</p>
-              <p className="text-xs text-muted-foreground mb-3">{t.settings.logoDesc}</p>
+              <p className="text-sm font-medium text-foreground mb-1">{t('settings.logoTitle')}</p>
+              <p className="text-xs text-muted-foreground mb-3">{t('settings.logoDesc')}</p>
               <div className="flex items-center gap-2">
                 <label className="cursor-pointer flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors">
                   <Upload className="w-3.5 h-3.5" />
-                  {form.logo ? t.settings.changeLogo : t.settings.uploadLogo}
+                  {form.logo ? t('settings.changeLogo') : t('settings.uploadLogo')}
                   <input
                     type="file"
                     accept="image/png,image/jpeg,image/jpg,image/webp"
@@ -131,7 +133,7 @@ export function SettingsClient({ settings, templates }: SettingsClientProps) {
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                       const file = e.target.files?.[0]
                       if (!file) return
-                      if (file.size > 1024 * 1024) { toast.error(t.settings.logoTooBig); return }
+                      if (file.size > 1024 * 1024) { toast.error(t('settings.logoTooBig')); return }
                       const reader = new FileReader()
                       reader.onload = () => update('logo', reader.result as string)
                       reader.readAsDataURL(file)
@@ -139,102 +141,128 @@ export function SettingsClient({ settings, templates }: SettingsClientProps) {
                   />
                 </label>
                 {form.logo && (
-                  <button onClick={() => update('logo', '')} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border border-border rounded-lg hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30 transition-colors text-muted-foreground">
-                    <X className="w-3.5 h-3.5" /> {t.settings.removeLogo}
+                  <button
+                    onClick={() => update('logo', '')}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border border-border rounded-lg hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30 transition-colors text-muted-foreground"
+                  >
+                    <X className="w-3.5 h-3.5" /> {t('settings.removeLogo')}
                   </button>
                 )}
               </div>
             </div>
           </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-xs font-medium text-muted-foreground">{t.settings.clinicName}</label>
+              <label className="text-xs font-medium text-muted-foreground">{t('settings.clinicName')}</label>
               <input value={form.clinicName} onChange={(e: React.ChangeEvent<HTMLInputElement>) => update('clinicName', e.target.value)} className="input-field mt-1" />
             </div>
             <div>
-              <label className="text-xs font-medium text-muted-foreground">{t.settings.doctorName}</label>
-              <input value={form.doctorName} onChange={(e: React.ChangeEvent<HTMLInputElement>) => update('doctorName', e.target.value)} className="input-field mt-1" placeholder="Dr. John Smith" />
+              <label className="text-xs font-medium text-muted-foreground">{t('settings.doctorName')}</label>
+              <input value={form.doctorName} onChange={(e: React.ChangeEvent<HTMLInputElement>) => update('doctorName', e.target.value)} className="input-field mt-1" placeholder="Dr. Ahmed" />
             </div>
             <div>
-              <label className="text-xs font-medium text-muted-foreground">Specialty</label>
-              <input value={form.doctorSpecialty} onChange={(e: React.ChangeEvent<HTMLInputElement>) => update('doctorSpecialty', e.target.value)} className="input-field mt-1" placeholder="General Medicine" />
+              <label className="text-xs font-medium text-muted-foreground">{t('settings.specialty')}</label>
+              <input value={form.doctorSpecialty} onChange={(e: React.ChangeEvent<HTMLInputElement>) => update('doctorSpecialty', e.target.value)} className="input-field mt-1" placeholder={t('settings.specialtyPlaceholder')} />
             </div>
             <div>
-              <label className="text-xs font-medium text-muted-foreground">Phone</label>
+              <label className="text-xs font-medium text-muted-foreground">{t('settings.phone')}</label>
               <input value={form.phone} onChange={(e: React.ChangeEvent<HTMLInputElement>) => update('phone', e.target.value)} className="input-field mt-1" />
             </div>
             <div>
-              <label className="text-xs font-medium text-muted-foreground">Email</label>
+              <label className="text-xs font-medium text-muted-foreground">{t('settings.email')}</label>
               <input value={form.email} onChange={(e: React.ChangeEvent<HTMLInputElement>) => update('email', e.target.value)} className="input-field mt-1" />
             </div>
           </div>
           <div>
-            <label className="text-xs font-medium text-muted-foreground">Address</label>
+            <label className="text-xs font-medium text-muted-foreground">{t('settings.address')}</label>
             <input value={form.address} onChange={(e: React.ChangeEvent<HTMLInputElement>) => update('address', e.target.value)} className="input-field mt-1" />
           </div>
+
           <div className="grid grid-cols-2 gap-4 pt-4 border-t border-border">
             <div>
-              <label className="text-xs font-medium text-muted-foreground">{t.settings.consultationPrice}</label>
+              <label className="text-xs font-medium text-muted-foreground">{t('settings.consultationPrice')}</label>
               <div className="relative mt-1">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">$</span>
                 <input type="number" value={form.consultationPrice} onChange={(e: React.ChangeEvent<HTMLInputElement>) => update('consultationPrice', parseFloat(e.target.value))} className="input-field pl-7" />
               </div>
             </div>
             <div>
-              <label className="text-xs font-medium text-muted-foreground">{t.settings.currency}</label>
+              <label className="text-xs font-medium text-muted-foreground">{t('settings.currency')}</label>
               <select value={form.currency} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => update('currency', e.target.value)} className="input-field mt-1">
                 {['USD', 'EUR', 'GBP', 'DZD', 'MAD', 'TND'].map(c => <option key={c}>{c}</option>)}
               </select>
             </div>
             <div>
-              <label className="text-xs font-medium text-muted-foreground flex items-center gap-1"><Globe className="w-3 h-3" /> {t.settings.language}</label>
+              <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                <Globe className="w-3 h-3" /> {t('settings.language')}
+              </label>
               <select value={form.language} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => update('language', e.target.value)} className="input-field mt-1">
                 {LANGUAGES.map(l => <option key={l.code} value={l.code}>{l.label}</option>)}
               </select>
             </div>
           </div>
+
           <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-xl">
-            <input type="checkbox" id="requireFile" checked={form.requireMedicalFile} onChange={(e: React.ChangeEvent<HTMLInputElement>) => update('requireMedicalFile', e.target.checked)} className="w-4 h-4 text-primary rounded cursor-pointer" />
+            <input
+              type="checkbox"
+              id="requireFile"
+              checked={form.requireMedicalFile}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => update('requireMedicalFile', e.target.checked)}
+              className="w-4 h-4 text-primary rounded cursor-pointer"
+            />
             <label htmlFor="requireFile" className="cursor-pointer">
-              <p className="text-sm font-medium text-foreground">{t.settings.requireMedicalFile}</p>
-              <p className="text-xs text-muted-foreground">{t.settings.requireMedicalFileDesc}</p>
+              <p className="text-sm font-medium text-foreground">{t('settings.requireMedicalFile')}</p>
+              <p className="text-xs text-muted-foreground">{t('settings.requireMedicalFileDesc')}</p>
             </label>
           </div>
         </div>
       )}
 
-      {/* ── Prescription (header/footer text) ──────────────────────────── */}
+      {/* ── Prescription Text ─────────────────────────────────────────── */}
       {activeTab === 'prescription' && (
         <div className="clinic-card p-6 space-y-5 max-w-3xl">
           <h2 className="font-semibold text-foreground flex items-center gap-2">
             <FileText className="w-4 h-4 text-primary" />
-            Prescription Text
+            {t('settings.prescriptionText')}
           </h2>
           <div>
-            <label className="text-xs font-medium text-muted-foreground">Header Text</label>
-            <input value={form.prescriptionHeader} onChange={(e: React.ChangeEvent<HTMLInputElement>) => update('prescriptionHeader', e.target.value)} className="input-field mt-1" placeholder="e.g., MediCare Clinic — Dr. Smith, MD" />
+            <label className="text-xs font-medium text-muted-foreground">{t('settings.headerText')}</label>
+            <input
+              value={form.prescriptionHeader}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => update('prescriptionHeader', e.target.value)}
+              className="input-field mt-1"
+              placeholder={t('settings.headerPlaceholder')}
+            />
           </div>
           <div>
-            <label className="text-xs font-medium text-muted-foreground">Footer / Validity Note</label>
-            <textarea value={form.prescriptionFooter} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => update('prescriptionFooter', e.target.value)} className="input-field mt-1" rows={3} placeholder="Validity note, legal disclaimer..." />
+            <label className="text-xs font-medium text-muted-foreground">{t('settings.footerText')}</label>
+            <textarea
+              value={form.prescriptionFooter}
+              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => update('prescriptionFooter', e.target.value)}
+              className="input-field mt-1"
+              rows={3}
+              placeholder={t('settings.footerPlaceholder')}
+            />
           </div>
-          {/* Quick preview */}
           <div className="bg-muted/30 rounded-xl p-4 border border-border">
-            <p className="text-xs font-medium text-muted-foreground mb-3">Quick Preview</p>
+            <p className="text-xs font-medium text-muted-foreground mb-3">{t('settings.quickPreview')}</p>
             <div className="bg-card border border-border rounded-lg overflow-hidden text-sm">
               <div className="bg-gradient-to-r from-sky-600 to-cyan-600 px-4 py-2 text-white text-xs">
                 {form.prescriptionHeader || `${form.clinicName} — ${form.doctorName}`}
               </div>
               <div className="px-4 py-3">
                 <div className="flex justify-between text-xs text-muted-foreground mb-2">
-                  <span>Patient: John Doe</span>
-                  <span>Date: Today</span>
+                  <span>{t('settings.patientDemo')}</span>
+                  <span>{t('settings.dateDemo')}</span>
                 </div>
                 <p className="text-lg font-bold text-sky-600">&#8478;</p>
-                <p className="text-xs mt-1">1. Paracetamol 500mg — 3x/day — 5 days</p>
+                <p className="text-xs mt-1">1. Paracetamol 500mg — {t('prescriptions.frequencies.thriceDaily')} — {t('prescriptions.durations.5days')}</p>
               </div>
               <div className="bg-muted/30 px-4 py-1.5 border-t border-border">
-                <p className="text-xs text-center text-muted-foreground">{form.prescriptionFooter || 'Footer appears here'}</p>
+                <p className="text-xs text-center text-muted-foreground">
+                  {form.prescriptionFooter || t('settings.footerPreviewPlaceholder')}
+                </p>
               </div>
             </div>
           </div>
@@ -255,22 +283,22 @@ export function SettingsClient({ settings, templates }: SettingsClientProps) {
       {activeTab === 'templates' && (
         <div className="clinic-card overflow-hidden max-w-3xl">
           <div className="p-4 border-b border-border">
-            <h2 className="font-semibold text-foreground">Saved Prescription Templates</h2>
-            <p className="text-xs text-muted-foreground mt-0.5">Drug templates created from the prescription editor</p>
+            <h2 className="font-semibold text-foreground">{t('settings.savedTemplates')}</h2>
+            <p className="text-xs text-muted-foreground mt-0.5">{t('settings.templatesDesc')}</p>
           </div>
           {templates.length === 0 ? (
             <div className="py-10 text-center text-muted-foreground">
               <FileText className="w-8 h-8 mx-auto mb-2 opacity-30" />
-              <p className="text-sm">No templates saved yet</p>
-              <p className="text-xs">Create templates from the New Prescription page</p>
+              <p className="text-sm">{t('settings.noTemplates')}</p>
+              <p className="text-xs">{t('settings.noTemplatesDesc')}</p>
             </div>
           ) : (
             <div className="divide-y divide-border">
-              {templates.map(t => (
-                <div key={t.id} className="flex items-center justify-between p-4">
+              {templates.map(tmpl => (
+                <div key={tmpl.id} className="flex items-center justify-between p-4">
                   <div>
-                    <p className="font-medium text-sm text-foreground">{t.name}</p>
-                    <p className="text-xs text-muted-foreground">{t.description} · {(t.items as any[]).length} items</p>
+                    <p className="font-medium text-sm text-foreground">{tmpl.name}</p>
+                    <p className="text-xs text-muted-foreground">{tmpl.description} · {tmpl.items.length} {t('settings.items')}</p>
                   </div>
                 </div>
               ))}
@@ -279,7 +307,6 @@ export function SettingsClient({ settings, templates }: SettingsClientProps) {
         </div>
       )}
 
-      {/* Save button — not on layout tab (it has its own save) */}
       {activeTab !== 'layout' && activeTab !== 'templates' && (
         <button
           onClick={handleSave}
@@ -287,7 +314,7 @@ export function SettingsClient({ settings, templates }: SettingsClientProps) {
           className="flex items-center gap-2 bg-primary text-primary-foreground px-6 py-2.5 rounded-xl text-sm font-medium hover:bg-primary/90 disabled:opacity-50 transition-colors shadow-sm"
         >
           {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-          {t.common.saveChanges}
+          {t('common.saveChanges')}
         </button>
       )}
     </div>
