@@ -130,7 +130,7 @@ export function SettingsClient({ settings, templates }: SettingsClientProps) {
             </div>
             <div>
               <label className="text-xs font-medium text-muted-foreground">Currency</label>
-              <select value={form.currency} onChange={(e: React.ChangeEvent<HTMLInputElement>) => update('currency', e.target.value)} className="input-field mt-1">
+              <select value={form.currency} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => update('currency', e.target.value)} className="input-field mt-1">
                 {['USD', 'EUR', 'GBP', 'DZD', 'MAD', 'TND'].map(c => <option key={c}>{c}</option>)}
               </select>
             </div>
@@ -158,7 +158,7 @@ export function SettingsClient({ settings, templates }: SettingsClientProps) {
           </div>
           <div>
             <label className="text-xs font-medium text-muted-foreground">Footer / Validity Note</label>
-            <textarea value={form.prescriptionFooter} onChange={(e: React.ChangeEvent<HTMLInputElement>) => update('prescriptionFooter', e.target.value)} className="input-field mt-1" rows={3} placeholder="Validity note, legal disclaimer..." />
+            <textarea value={form.prescriptionFooter} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => update('prescriptionFooter', e.target.value)} className="input-field mt-1" rows={3} placeholder="Validity note, legal disclaimer..." />
           </div>
           {/* Quick preview */}
           <div className="bg-muted/30 rounded-xl p-4 border border-border">
