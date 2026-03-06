@@ -1,7 +1,7 @@
 'use client'
-import React, { useState, useCallback, useTransition } from 'react'
+import React, { useState, useCallback, useTransition, useEffect, useRef } from 'react'
 import { toast } from 'sonner'
-import { Save, Loader2, Eye, Layout, RotateCcw } from 'lucide-react'
+import { Save, Loader2, Eye, Layout, RotateCcw, Maximize2, Minimize2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { updateClinicSettings } from '@/lib/actions/finance'
 import type { PrescriptionLayout, CanvasElement } from '@/types/prescription-layout'
@@ -21,7 +21,35 @@ export function PrescriptionDesigner({ initialLayout, clinicSettings }: Props) {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [showTemplates, setShowTemplates] = useState(!initialLayout)
   const [showPreview, setShowPreview] = useState(false)
+  const [isFullscreen, setIsFullscreen] = useState(false)
   const [isPending, startTransition] = useTransition()
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  // Sync fullscreen state with browser Fullscreen API
+  useEffect(() => {
+    const onFsChange = () => {
+      setIsFullscreen(!!document.fullscreenElement)
+    }
+    document.addEventListener('fullscreenchange', onFsChange)
+    return () => document.removeEventListener('fullscreenchange', onFsChange)
+  }, [])
+
+  // Escape key exits fullscreen
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isFullscreen) toggleFullscreen()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [isFullscreen])
+
+  const toggleFullscreen = useCallback(async () => {
+    if (!document.fullscreenElement) {
+      await containerRef.current?.requestFullscreen()
+    } else {
+      await document.exitFullscreen()
+    }
+  }, [])
 
   const selectedElement = layout.elements.find((e: CanvasElement) => e.id === selectedId) ?? null
 
@@ -95,7 +123,11 @@ export function PrescriptionDesigner({ initialLayout, clinicSettings }: Props) {
   }
 
   return (
-    <div className="flex flex-col" style={{ height: '82vh' }}>
+    <div
+      ref={containerRef}
+      className={cn('flex flex-col bg-background', isFullscreen ? 'fixed inset-0 z-[9999]' : '')}
+      style={{ height: isFullscreen ? '100vh' : '82vh' }}
+    >
       {/* Toolbar */}
       <div className="flex items-center justify-between px-4 py-2.5 bg-card border-b border-border shrink-0">
         <div className="flex items-center gap-2">
@@ -113,6 +145,14 @@ export function PrescriptionDesigner({ initialLayout, clinicSettings }: Props) {
           </button>
           <button onClick={() => setShowPreview(!showPreview)} className={cn('flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border rounded-lg transition-colors', showPreview ? 'bg-primary text-primary-foreground border-primary' : 'border-border hover:bg-accent')}>
             <Eye className="w-3.5 h-3.5" /> {showPreview ? 'Editing' : 'Preview'}
+          </button>
+          <button
+            onClick={toggleFullscreen}
+            title={isFullscreen ? 'Exit fullscreen (Esc)' : 'Enter fullscreen'}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border border-border rounded-lg hover:bg-accent transition-colors text-muted-foreground"
+          >
+            {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
+            {isFullscreen ? 'Exit' : 'Fullscreen'}
           </button>
           <button onClick={saveLayout} disabled={isPending} className="flex items-center gap-1.5 px-4 py-1.5 text-xs font-semibold bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors">
             {isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />} Save Layout
