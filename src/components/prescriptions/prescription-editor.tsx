@@ -1,12 +1,13 @@
 'use client'
 
-import { useState, useTransition, useCallback } from 'react'
+import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { createPrescription, searchDrugs } from '@/lib/actions/prescriptions'
-import { Plus, Trash2, ArrowLeft, Loader2, FileText, Save, Search } from 'lucide-react'
+import { createPrescription } from '@/lib/actions/prescriptions'
+import { Plus, Trash2, ArrowLeft, Loader2, FileText, Save } from 'lucide-react'
 import { toast } from 'sonner'
-import { cn } from '@/lib/utils'
 import { useT } from '@/components/providers/app-provider'
+import { DrugAutocomplete } from './drug-autocomplete'
+import type { DrugSearchResult } from '@/lib/drugs'
 
 interface DrugItem {
   drugName: string
@@ -14,6 +15,9 @@ interface DrugItem {
   frequency: string
   duration: string
   instructions: string
+  _form?: string
+  _dci?: string
+  _lab?: string
 }
 
 interface Patient { id: string; firstName: string; lastName: string }
@@ -36,33 +40,26 @@ export function PrescriptionEditor({
   const [items, setItems] = useState<DrugItem[]>([
     { drugName: '', dosage: '', frequency: '', duration: '', instructions: '' }
   ])
-  const [drugSuggestions, setDrugSuggestions] = useState<{ id: string; name: string; category: string | null; genericName: string | null; commonDosages: string[] }[]>([])
-  const [activeSearch, setActiveSearch] = useState<number | null>(null)
 
-  const searchForDrugs = useCallback(async (query: string, index: number) => {
-    if (query.length < 2) { setDrugSuggestions([]); return }
-    setActiveSearch(index)
-    const results = await searchDrugs(query)
-    setDrugSuggestions(results)
-  }, [])
-
-  const updateItem = (index: number, field: keyof DrugItem, value: string) => {
+  const updateItem = (index: number, field: keyof DrugItem, value: string) =>
     setItems(prev => prev.map((item, i) => i === index ? { ...item, [field]: value } : item))
-    if (field === 'drugName') searchForDrugs(value, index)
-  }
 
-  const selectDrug = (index: number, drug: { name: string; commonDosages: string[] }) => {
+  const handleDrugSelect = (index: number, drug: DrugSearchResult) => {
     setItems(prev => prev.map((item, i) => i === index ? {
       ...item,
       drugName: drug.name,
-      dosage: drug.commonDosages[0] || '',
+      dosage: drug.dosage,
+      _form: drug.form,
+      _dci: drug.dci,
+      _lab: drug.laboratory,
     } : item))
-    setDrugSuggestions([])
-    setActiveSearch(null)
   }
 
-  const addItem = () => setItems(prev => [...prev, { drugName: '', dosage: '', frequency: '', duration: '', instructions: '' }])
-  const removeItem = (index: number) => setItems(prev => prev.filter((_, i) => i !== index))
+  const addItem = () =>
+    setItems(prev => [...prev, { drugName: '', dosage: '', frequency: '', duration: '', instructions: '' }])
+
+  const removeItem = (index: number) =>
+    setItems(prev => prev.filter((_, i) => i !== index))
 
   const applyTemplate = (template: Template) => {
     setItems(template.items.map(item => ({ ...item, instructions: item.instructions || '' })))
@@ -79,7 +76,7 @@ export function PrescriptionEditor({
         patientId,
         diagnosis,
         notes,
-        items: validItems,
+        items: validItems.map(({ _form: _f, _dci: _d, _lab: _l, ...item }) => item),
       })
       if (result.success) {
         toast.success(t('prescriptions.toast.saved'))
@@ -124,23 +121,18 @@ export function PrescriptionEditor({
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main Form */}
         <div className="lg:col-span-2 space-y-5">
-          {/* Patient */}
-          <div className="clinic-card p-5">
-            <h2 className="font-semibold text-sm text-foreground mb-3">{t('prescriptions.patient')}</h2>
-            <select
-              value={patientId}
-              onChange={e => setPatientId(e.target.value)}
-              className="input-field"
-            >
+
+          {/* Patient + Diagnosis */}
+          <div className="clinic-card p-5 space-y-3">
+            <h2 className="font-semibold text-sm text-foreground">{t('prescriptions.patient')}</h2>
+            <select value={patientId} onChange={e => setPatientId(e.target.value)} className="input-field">
               <option value="">{t('prescriptions.selectPatient')}</option>
               {patients.map(p => (
                 <option key={p.id} value={p.id}>{p.firstName} {p.lastName}</option>
               ))}
             </select>
-
-            <div className="mt-3">
+            <div>
               <label className="text-xs font-medium text-muted-foreground">{t('prescriptions.diagnosis')}</label>
               <input
                 value={diagnosis}
@@ -163,9 +155,9 @@ export function PrescriptionEditor({
 
             <div className="space-y-4">
               {items.map((item, index) => (
-                <div key={index} className="relative bg-muted/30 rounded-xl p-4 space-y-3">
+                <div key={index} className="bg-muted/30 rounded-xl p-4 space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-muted-foreground uppercase">
+                    <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
                       {t('prescriptions.drug')} {index + 1}
                     </span>
                     {items.length > 1 && (
@@ -175,33 +167,34 @@ export function PrescriptionEditor({
                     )}
                   </div>
 
-                  <div className="relative">
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-                      <input
-                        value={item.drugName}
-                        onChange={e => updateItem(index, 'drugName', e.target.value)}
-                        onBlur={() => setTimeout(() => { setDrugSuggestions([]); setActiveSearch(null) }, 200)}
-                        className="input-field pl-8"
-                        placeholder={t('prescriptions.searchDrug')}
-                      />
-                    </div>
-                    {activeSearch === index && drugSuggestions.length > 0 && (
-                      <div className="absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-xl shadow-lg z-10 overflow-hidden max-h-40 overflow-y-auto">
-                        {drugSuggestions.map(drug => (
-                          <button
-                            key={drug.id}
-                            onClick={() => selectDrug(index, drug)}
-                            className="w-full text-left px-3 py-2 hover:bg-accent transition-colors border-b border-border last:border-0"
-                          >
-                            <p className="text-sm font-medium text-foreground">{drug.name}</p>
-                            <p className="text-xs text-muted-foreground">{drug.category ?? '—'} · {drug.genericName ?? '—'}</p>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+                  {/* ── Drug autocomplete ── */}
+                  <DrugAutocomplete
+                    value={item.drugName}
+                    onChange={v => updateItem(index, 'drugName', v)}
+                    onSelect={drug => handleDrugSelect(index, drug)}
+                    placeholder={t('prescriptions.searchDrug')}
+                  />
 
+                  {/* DCI / form / lab badges */}
+                  {(item._dci || item._form) && (
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {item._dci && (
+                        <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium">
+                          DCI : {item._dci}
+                        </span>
+                      )}
+                      {item._form && (
+                        <span className="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded-full">
+                          {item._form}
+                        </span>
+                      )}
+                      {item._lab && (
+                        <span className="text-xs text-muted-foreground">{item._lab}</span>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Dosage / Frequency / Duration */}
                   <div className="grid grid-cols-3 gap-2">
                     <div>
                       <label className="text-xs text-muted-foreground">{t('prescriptions.dosage')}</label>
@@ -214,30 +207,25 @@ export function PrescriptionEditor({
                     </div>
                     <div>
                       <label className="text-xs text-muted-foreground">{t('prescriptions.frequency')}</label>
-                      <select
-                        value={item.frequency}
-                        onChange={e => updateItem(index, 'frequency', e.target.value)}
-                        className="input-field mt-0.5"
-                      >
+                      <select value={item.frequency} onChange={e => updateItem(index, 'frequency', e.target.value)} className="input-field mt-0.5">
                         <option value="">{t('prescriptions.selectFrequency')}</option>
                         {frequencies.map(f => <option key={f} value={f}>{f}</option>)}
                       </select>
                     </div>
                     <div>
                       <label className="text-xs text-muted-foreground">{t('prescriptions.duration')}</label>
-                      <select
-                        value={item.duration}
-                        onChange={e => updateItem(index, 'duration', e.target.value)}
-                        className="input-field mt-0.5"
-                      >
+                      <select value={item.duration} onChange={e => updateItem(index, 'duration', e.target.value)} className="input-field mt-0.5">
                         <option value="">{t('prescriptions.selectDuration')}</option>
                         {durations.map(d => <option key={d} value={d}>{d}</option>)}
                       </select>
                     </div>
                   </div>
 
+                  {/* Instructions */}
                   <div>
-                    <label className="text-xs text-muted-foreground">{t('prescriptions.instructions')} ({t('common.optional')})</label>
+                    <label className="text-xs text-muted-foreground">
+                      {t('prescriptions.instructions')} <span className="opacity-60">({t('common.optional')})</span>
+                    </label>
                     <input
                       value={item.instructions}
                       onChange={e => updateItem(index, 'instructions', e.target.value)}
