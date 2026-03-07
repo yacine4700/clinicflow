@@ -18,15 +18,13 @@ interface DrugItem {
 
 interface Patient { id: string; firstName: string; lastName: string }
 interface Template { id: string; name: string; items: DrugItem[] }
-interface Settings { clinicName: string; doctorName: string; consultationPrice: number }
 
 export function PrescriptionEditor({
-  patients, templates, doctorName, settings, defaultPatientId,
+  patients, templates, doctorName, defaultPatientId,
 }: {
   patients: Patient[]
   templates: Template[]
   doctorName: string
-  settings: Settings | null
   defaultPatientId?: string
 }) {
   const router = useRouter()
@@ -40,15 +38,12 @@ export function PrescriptionEditor({
   ])
   const [drugSuggestions, setDrugSuggestions] = useState<{ id: string; name: string; category: string | null; genericName: string | null; commonDosages: string[] }[]>([])
   const [activeSearch, setActiveSearch] = useState<number | null>(null)
-  const [searchLoading, setSearchLoading] = useState(false)
 
   const searchForDrugs = useCallback(async (query: string, index: number) => {
     if (query.length < 2) { setDrugSuggestions([]); return }
-    setSearchLoading(true)
     setActiveSearch(index)
     const results = await searchDrugs(query)
     setDrugSuggestions(results)
-    setSearchLoading(false)
   }, [])
 
   const updateItem = (index: number, field: keyof DrugItem, value: string) => {
@@ -85,11 +80,10 @@ export function PrescriptionEditor({
         diagnosis,
         notes,
         items: validItems,
-        consultationFee: settings?.consultationPrice,
       })
       if (result.success) {
         toast.success(t('prescriptions.toast.saved'))
-        router.push(`/prescriptions/${result.id}`)
+        router.push(`/prescriptions/${result.prescription.id}`)
       }
     })
   }
