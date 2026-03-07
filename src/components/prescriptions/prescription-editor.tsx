@@ -38,7 +38,7 @@ export function PrescriptionEditor({
   const [items, setItems] = useState<DrugItem[]>([
     { drugName: '', dosage: '', frequency: '', duration: '', instructions: '' }
   ])
-  const [drugSuggestions, setDrugSuggestions] = useState<{ id: string; name: string; category: string; genericName: string; commonDosages: string[] }[]>([])
+  const [drugSuggestions, setDrugSuggestions] = useState<{ id: string; name: string; category: string | null; genericName: string | null; commonDosages: string[] }[]>([])
   const [activeSearch, setActiveSearch] = useState<number | null>(null)
   const [searchLoading, setSearchLoading] = useState(false)
 
@@ -201,7 +201,7 @@ export function PrescriptionEditor({
                             className="w-full text-left px-3 py-2 hover:bg-accent transition-colors border-b border-border last:border-0"
                           >
                             <p className="text-sm font-medium text-foreground">{drug.name}</p>
-                            <p className="text-xs text-muted-foreground">{drug.category} · {drug.genericName}</p>
+                            <p className="text-xs text-muted-foreground">{drug.category ?? '—'} · {drug.genericName ?? '—'}</p>
                           </button>
                         ))}
                       </div>
